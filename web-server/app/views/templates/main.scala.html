@@ -1,0 +1,29 @@
+@(title: String, navbarContent: Html = Html(""), styles: Html = Html(""), scripts: Html = Html(""), modals: Html = Html(""))(content: Html)
+
+@import controllers.routes
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>@title</title>
+		<link rel="shortcut icon" type="image/png" href="@routes.MyAssets.img("favicon.png")">
+		<link rel="stylesheet" media="screen" href="@routes.MyAssets.lib("bootstrap/css/bootstrap.min.css")">
+		<link rel="stylesheet" media="screen" href="@routes.MyAssets.css("main.css")">
+		@styles
+	</head>
+	<body>
+		<div class="navbar navbar-default navbar-fixed-top">
+			<div class="container">
+				<div class="navbar-collapse collapse" id="navbar-main">
+					@navbarContent
+				</div>
+			</div>
+		</div>
+		
+		<div class="container">
+			@content
+		</div>
+		@modals
+		@scripts
+	</body>
+</html>

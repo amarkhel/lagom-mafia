@@ -1,0 +1,5 @@
+@(request: RequestHeader)(implicit messages: Messages)
+@views.html.templates.main("Страница не найдена") {
+  <h1>@Messages("error.notfound.title")</h1>
+  <p>@Messages("error.notfound.text", request.method + " " + request.uri)</p>
+}

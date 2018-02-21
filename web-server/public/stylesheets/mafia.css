@@ -1,0 +1,408 @@
+
+body {
+	padding-top: 60px;
+	background: #2e323b url(https://st.mafiaonline.ru/images/new/bg-blurred.jpg) no-repeat fixed center top;
+}
+
+.panel {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+}
+
+@viewport {
+    width: device-width
+}
+@-webkit-viewport {
+    width: device-width
+}
+@-moz-viewport {
+    width: device-width
+}
+@-ms-viewport {
+    width: device-width
+}
+@-o-viewport {
+    width: device-width
+}
+/* Overriding some default bootstrap styles */
+html {
+    position: relative;
+    min-height: 100%;
+}
+html.redirect, html.maintenance {
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+body {
+    font-family: 'PT Sans', 'Helvetica Neue', Helvetica, Tahoma, Arial, sans-serif !important;
+    margin-bottom: 35px;
+    background: #2e323b url(https://st.mafiaonline.ru/images/new/bg-blurred.jpg) no-repeat fixed center top;
+}
+.table:not(.forum) > thead > tr > th {
+    border-bottom: 2px solid #bbbbbb;
+}
+.table:not(.forum) > tbody > tr > td, .table:not(.forum) > tbody > tr > th, .table:not(.forum) > tfoot > tr > td, .table:not(.forum) > tfoot > tr > th, .table > thead > tr > td, .table:not(.forum) > thead > tr > th {
+    border-top: 1px solid #bbbbbb;
+}
+body.redirect, body.maintenance {
+    display: table-cell;
+    vertical-align: middle;
+}
+#footer {
+    position: absolute;
+    bottom: 0;
+    /* Set the fixed height of the footer here */
+    height: 35px;
+    width: 100%;
+    margin-left: -15px;
+    margin-right: -15px;
+    text-align: center;
+}
+a, a:link, a:active, a:visited, a:hover, a.nu u {
+    color: #cd0303;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+a.nu:hover {
+    text-decoration: none;
+}
+a.nu:hover u {
+    text-decoration: underline;
+}
+a.btn {
+    color: #fff;
+}
+a.btn-default i.fa {
+    color: #333;
+}
+.highlight-red {
+    color: #cd0303;
+}
+.highlight-green {
+    color: #242e1f;
+}
+.highlight-yellow {
+    color: #fc0;
+}
+.badge-important {
+    background-color: #b94a48;
+}
+.navbar-default {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+}
+.pagination > li > a, .pagination > li > span {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+    color: #cd0303;
+}
+.pagination > .active > a, .pagination > .active > a:focus, .pagination > .active > a:hover, .pagination > .active > span, .pagination > .active > span:focus, .pagination > .active > span:hover {
+    background-color: #cd0303;
+    border-color: #cd0303;
+    color: #fff;
+    cursor: default;
+    z-index: 2;
+}
+.pagination > .disabled > a, .pagination > .disabled > a:focus, .pagination > .disabled > a:hover, .pagination > .disabled > span, .pagination > .disabled > span:focus, .pagination > .disabled > span:hover {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+    color: #777;
+    cursor: not-allowed;
+}
+.pagination-nano {
+    margin: 0;
+    vertical-align: middle;
+}
+.pagination-nano > li > a, .pagination-nano > li > span {
+    font-size: 12px;
+    padding: 3px 7px;
+}
+.pagination-nano > li:first-child > a, .pagination-nano > li:first-child > span {
+    border-bottom-left-radius: 2px;
+    border-top-left-radius: 2px;
+}
+.pagination-nano > li:last-child > a, .pagination-nano > li:last-child > span {
+    border-bottom-right-radius: 2px;
+    border-top-right-radius: 2px;
+}
+.no-margin {
+    margin: 0;
+}
+.no-top-margin {
+    margin-top: 0;
+}
+.no-bottom-margin {
+    margin-bottom: 0;
+}
+.vertical-offset-100 {
+    margin-top: 100px;
+}
+.vertical-offset-200 {
+    margin-top: 200px;
+}
+.ip-icon {
+    cursor: help;
+}
+.postsignature, .postedit {
+    color: #999;
+}
+.postsignature a {
+    color: #9d4e4a;
+}
+.admin-action {
+    color: #999;
+    font-style: italic;
+}
+/* Forum layout */
+div.pun {
+    padding: 5px;
+}
+.forum.table, div.block, ol.breadcrumb {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 7px;
+    margin-bottom: 20px;
+}
+.forum.table > tbody > tr > td {
+    vertical-align: middle;
+}
+.forum > thead > tr > th > h3 {
+    margin: 0;
+}
+.forum .fa {
+    width: 1em;
+    text-align: center;
+}
+.forum.table th.cell-micro {
+    width: 4em;
+}
+.forum.table th.cell-midi {
+    width: 7em;
+}
+.forum.table th.cell-maxi {
+    width: 16em;
+}
+#onlinelist dd, #onlinelist dt {
+    display: inline;
+}
+.blockform {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 7px;
+    margin-bottom: 20px;
+}
+.posts-thread > .row {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+    margin-bottom: 15px;
+    border-radius: 7px;
+}
+body {
+    font-size: 16px;
+}
+.postmsg blockquote.quote {
+    border-left: 5px solid #999;
+    padding: 3px 20px;
+}
+.postmsg blockquote.quote p {
+    font-size: 16px;
+    line-height: 20px;
+}
+.postmsg blockquote.quote footer {
+    color: #555 !important;
+}
+.postmsg img {
+    max-width: 100%;
+}
+.postmsg h5 {
+    color: #cd0303;
+    font-size: 16px;
+}
+.postmsg p {
+    text-align: justify;
+}
+.avatar {
+    border: 1px solid #cd0303;
+}
+.quickpostform {
+    padding: 10px;
+}
+.spoiler {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-color: rgba(221, 221, 221, 0.5);
+}
+.spoiler > .spoiler-head {
+    cursor: pointer;
+    background-color: rgba(245, 245, 245, 0.5);
+    border-color: rgba(221, 221, 221, 0.5);
+}
+.spoiler > .spoiler-head > a {
+    text-decoration: none;
+}
+.spoiler > .spoiler-head > a::before {
+    display: inline-block;
+    font-family: FontAwesome;
+    color: #333;
+    content: 'ï…‡Â ';
+}
+.spoiler > .spoiler-head > a.collapsed::before {
+    content: 'ï†–Â ';
+}
+.resize-vertical {
+    resize: vertical;
+}
+.resize-horizontal {
+    resize: horizontal;
+}
+.resize-none {
+    resize: none;
+}
+.level {
+    border: 1px solid #999999;
+    border-radius: 3px;
+    display: inline-block;
+    font-size: 10px;
+    line-height: 14px;
+    text-align: center;
+    vertical-align: baseline;
+    white-space: nowrap;
+    width: 16px;
+}
+/* BBCode toolbar */
+#colorpickertable {
+    border-collapse: collapse;
+}
+#colorpickertable tr {
+    height: 10px;
+}
+#colorpickertable td {
+    border: 1px solid #2a2a2a;
+    cursor: crosshair;
+    margin: 0;
+    padding: 0;
+    width: 10px;
+}
+#colorpickertable #demo td {
+    border: 0 none transparent !important;
+    padding: 1px !important;
+}
+#colorbox-color-field {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+    display: block;
+    height: 34px;
+    padding: 6px 12px;
+    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+    width: 100%;
+}
+#smilelist {
+    height: 250px;
+    overflow-y: scroll;
+}
+#smilelist img {
+    cursor: pointer;
+}
+.break-word {
+    word-break: break-all;
+}
+.no-break {
+    white-space: nowrap;
+}
+.moder-panel {
+    text-align: center;
+    margin-bottom: 20px;
+}
+#awards img.fright {
+    float: right;
+    margin-left: 4px;
+    margin-bottom: 4px;
+}
+
+.nav-social > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.table-nonfluid {
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.img-thumbnail {
+    background-color: #f9f9f9;
+}
+.floating-alert {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    z-index: 5000;
+}
+.strong {
+    font-weight: bold;
+}
+.underlined {
+    text-decoration: underline;
+}
+.move {
+    font-weight: bold;
+    text-decoration: underline;
+    font-size: 20px;
+    padding-bottom: 5px;
+}
+.move-city {
+    color: #337ab7;
+}
+.move-positive {
+    color: #31708f;
+}
+.move-maf {
+    color: #a94442;
+}
+.move-man {
+    color: #8a6d3b;
+}
+.log-system {
+    color: #777;
+}
+#log_chat {
+    color: #777;
+}
+#log_chat .chat_text {
+    color: #333;
+}
+.align-middle {
+    vertical-align: middle !important;
+}
+
+.panel {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+}
+
+.plus-size {
+    font-size: 18px;
+}
+
+@media (min-width: 1200px){
+.container {
+    width: 100%;
+}
+}
+@media (min-width: 992px){
+.container {
+    width: 100%;
+}
+}
+@media (min-width: 768px){
+.container {
+    width: 100%;
+}
+}
+
+.system{
+    font-weight:bold;
+}
+

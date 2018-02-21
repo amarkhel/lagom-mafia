@@ -1,0 +1,19 @@
+@import controllers.LoadGameForm
+@import b3.vertical.fieldConstructor
+@import controllers.routes
+@import com.amarkhel.user.api.User
+@(gameForm: Form[LoadGameForm], user: User)(implicit request: RequestHeader, messages: Messages)
+
+@views.html.templates.default("Посмотреть игру", Some(user), "") {
+@tags.alertFromRequest(request, "error")
+@gameForm.globalError.map { error =>
+@tags.alert(error.message, "error")
+}
+@b3.formCSRF(routes.ChatController.game) {
+  <fieldset>
+	<legend>@Messages("loadGame")</legend>
+	@b3.text( gameForm("id"), '_hiddenLabel -> Messages("field.gameId"), 'placeholder -> "Номер партии", 'autofocus -> true )
+	@b3.submit('class -> "btn btn-primary btn-block"){ @Messages("loadGame") }
+  </fieldset>
+  }
+}

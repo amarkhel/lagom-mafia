@@ -1,0 +1,9 @@
+body {
+	padding-top: 60px;
+
+}
+
+.panel {
+    background-color: rgba(248, 248, 248, 0.85);
+    border-color: rgba(231, 231, 231, 0.85);
+}

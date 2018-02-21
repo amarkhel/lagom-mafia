@@ -1,0 +1,7 @@
+@import com.amarkhel.user.api.User
+@(user: User)(implicit request: RequestHeader, messages: Messages)
+@default("Поздравляем с успешной регистрацией", loggedUser = Some(user)) {
+	<p>@Messages("signup.thanks", user.name)</p>
+	<p>@Messages("signup.ready")</p>
+	<a href="@controllers.routes.Application.index">@Messages("go.index")</a>
+}

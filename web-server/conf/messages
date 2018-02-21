@@ -1,0 +1,76 @@
+################################################################################################
+# INDEX
+
+field.name=Имя
+field.email=Email
+field.password=Пароль
+field.gameId=Номер партии
+
+loadGame=Загрузить игру
+index.title=Сайт У
+index.intro.logged=Вы залогинены как <span class="text-success">{0}</span>, <a href="{2}">выйти</a>.
+index.intro.notlogged=Пожалуйста <a href="{0}">войдите на сайт </a> или <a href="{1}">зарегистрируйтесь</a>.<br>\
+Если не помните пароль, то <a href="{2}">можно сбросить пароль</a> (придет на почту).
+
+signup=Зарегистрироваться
+signup.title=Создать аккаунт
+signup.signin.question=Зарегистрированы?
+signup.signin=Войти
+signup.thanks=Спасибо {0} за регистрацию!
+signup.sent=Вам отправлен email на адрес {0}. Следуйте инструкциям в письме, чтобы закончить регистрацию
+signup.ready=Ваш аккаунт подтвержден
+signup.confirmHeader=Подтверждение регистрации
+
+signin=Войти
+signin.title=Вход
+signin.rememberme=Запомнить меня
+signin.signup.question=Нет аккаунта?
+signin.signup=Зарегистрируйтесь
+signin.forgot.question=Забыли пароль?
+signin.forgot=Сбросить пароль
+
+go.index=На Главную
+signout=Выйти
+
+topbar.index=На главную
+topbar.hello=Добро пожаловать
+
+forgot.title=Забыли пароль?
+forgot.sent=Вам отправлен email на адрес {0} с инструкцией по сбросу пароля
+forgot.reset.title=Сбросить пароль
+forgot.reseted=Пароль сброщен
+
+changepass=Изменить пароль
+changepass.title=Изменение пароля
+changepass.field.current=Текущий пароль
+changepass.field.new=Новый пароль
+changepass.field.repeat=Повторите новый пароль
+
+auth.user.notexists=Пользователя с таким именем не существует
+auth.user.notunique=Пользователь с таким именем уже существует
+auth.email.notunique=Пользователь с таким email уже существует
+auth.useremail.notunique=Пользователь с таким именем и email уже существует
+auth.credentials.incorrect=Неправильный пароль или email
+auth.passwords.notequal=Пароли должны совпадать
+auth.password.changed=Пароль успешно изменен
+auth.currentpwd.incorrect=Неправильный пароль
+
+denied.title=Нет доступа!
+denied.text=У вас не хватает прав доступа.
+
+error.unknown.title=Ошибочка вышла
+error.unknown.text=Фиг его знает что произошло, но попробуйте сказать админам что код ошибки <strong>{0}</strong>, может разберутся.
+error.notfound.title=Обработчик не найден
+error.notfound.text=Для запроса ''{0}''
+
+
+mail.welcome.subject=Добро пожаловать на сайт У! Пожалуйста подтвердите свой аккаунт
+mail.welcome.hello=Добро пожаловать {0}!
+mail.welcome.prelink=Спасибо за регистрацию! Пожалуйста подтвердите ваш email адрес, кликнув по ссылке.
+mail.welcome.postlink=Обратите внимание, что вы можете подтвердить свой аккаунт в течение 24 часов.
+
+mail.forgotpwd.subject=Сброс пароля
+mail.forgotpwd.prelink=Кто-то (надеемся что вы сами) запросил сбросить пароль для вашего аккаунта на сайте У. Кликните по ссылке, чтобы изменить пароль:
+mail.forgotpwd.postlink=Обратите внимание, что ссылка действительна  только в течение 24 часов. Если вы не хотите чтобы ваш пароль был сброщен, не делайте ничего.
+
+mail.sign=Упийцы

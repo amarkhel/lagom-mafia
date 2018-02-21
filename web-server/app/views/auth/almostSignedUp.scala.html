@@ -1,0 +1,6 @@
+@import com.amarkhel.user.api.User
+@(user: User)(implicit messages: Messages)
+@default("Подтверждение регистрации") {
+	<p>@Messages("signup.thanks", user.name)</p>
+	<p>@Messages("signup.sent", user.email)</p>
+}

@@ -6,7 +6,7 @@ import com.amarkhel.user.api.UserService
 import com.google.inject.Provides
 import com.lightbend.lagom.scaladsl.api.{LagomConfigComponent, ServiceAcl, ServiceInfo}
 import com.lightbend.lagom.scaladsl.client.LagomServiceClientComponents
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
 import com.mohiva.play.silhouette.api.actions._
 import com.mohiva.play.silhouette.api.crypto.{Crypter, CrypterAuthenticatorEncoder, Signer}
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
@@ -147,8 +147,8 @@ abstract class Web(context: Context) extends BuiltInComponentsFromContext(contex
 class WebGatewayLoader extends ApplicationLoader {
   override def load(context: Context) = context.environment.mode match {
     case Mode.Dev =>
-      (new Web(context) with LagomDevModeComponents).application
+      (new Web(context) with LagomDevModeServiceLocatorComponents).application
     case _ =>
-      (new Web(context) with LagomDevModeComponents).application
+      (new Web(context) with LagomDevModeServiceLocatorComponents).application
   }
 }

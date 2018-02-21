@@ -1,7 +1,7 @@
 package com.amarkhel.user.impl
 
 import com.amarkhel.user.api.UserService
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
@@ -20,10 +20,10 @@ abstract class UserApplication(context: LagomApplicationContext)
 
 class UserApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new UserApplication(context) with LagomDevModeComponents
+    new UserApplication(context) with LagomDevModeServiceLocatorComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
-    new UserApplication(context) with LagomDevModeComponents
+    new UserApplication(context) with LagomDevModeServiceLocatorComponents
 
   override def describeService = Some(readDescriptor[UserService])
 }

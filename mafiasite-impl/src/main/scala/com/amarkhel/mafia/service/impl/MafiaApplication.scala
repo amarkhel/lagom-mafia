@@ -1,10 +1,8 @@
 package com.amarkhel.mafia.service.impl
 
-import akka.actor.{TypedActor, TypedProps}
-import akka.stream.{ActorMaterializer, Materializer}
 import com.amarkhel.mafia.service.api.MafiaService
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
@@ -38,10 +36,10 @@ abstract class MafiaApplication(context: LagomApplicationContext)
 
 class MafiaApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new MafiaApplication(context) with LagomDevModeComponents
+    new MafiaApplication(context) with LagomDevModeServiceLocatorComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
-    new MafiaApplication(context) with LagomDevModeComponents
+    new MafiaApplication(context) with LagomDevModeServiceLocatorComponents
 
   override def describeService = Some(readDescriptor[MafiaService])
 }

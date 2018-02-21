@@ -13,12 +13,11 @@ organization in ThisBuild := "com.amarkhel"
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.12.4"
 
-excludeDependencies += "com.typesafe.conductr" % "lagom1-scala-conductr-bundle-lib_2.12"
-
 lazy val clients = Seq(webClient)
 
 lazy val webServer = (project in file("web-server"))
   .settings(commonSettings: _*)
+  .settings(lagomServicePort := 11000)
   .settings(
     routesImport += "config.Routes._",
     includeFilter in (Assets, LessKeys.less) := "*.less",
@@ -57,8 +56,7 @@ lazy val webServer = (project in file("web-server"))
       "net.codingwell" %% "scala-guice" % "4.1.1",
       "com.iheart" %% "ficus" % "1.4.3",
       "com.typesafe.play" %% "play-mailer" % "6.0.1"
-    ),
-    excludeDependencies += "com.typesafe.conductr" % "lagom1-scala-conductr-bundle-lib_2.12"
+    )
   ).enablePlugins(PlayScala && LagomPlay && SbtWeb).
   aggregate(clients.map(projectToRef): _*).
   dependsOn(common, mafiaSiteApi, processorApi, userApi, tokenApi, webSharedJvm)
@@ -112,13 +110,12 @@ lazy val webSharedJvm = webShared.jvm
 lazy val webSharedJs = webShared.js
 
 // loads the jvm project at sbt startup
-onLoad in Global := (Command.process("project webServer", _: State)) compose (onLoad in Global).value
+//onLoad in Global := (Command.process("project webServer", _: State)) compose (onLoad in Global).value
 
 lazy val common = (project in file("com.amarkhel.mafia.common"))
   .settings(commonSettings: _*)
   .settings(
     version := "1.0-SNAPSHOT",
-    excludeDependencies += "com.typesafe.conductr" % "lagom1-scala-conductr-bundle-lib_2.12",
     libraryDependencies ++= Seq(
       lagomScaladslApi,
       lagomScaladslServer % Optional,
@@ -156,7 +153,6 @@ lazy val processorImpl = (project in file("processor-impl"))
   .dependsOn(processorApi, mafiaSiteApi)
   .settings(
     version := "1.0-SNAPSHOT",
-    excludeDependencies += "com.typesafe.conductr" % "lagom1-scala-conductr-bundle-lib_2.12",
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       lagomScaladslTestKit,
@@ -260,10 +256,16 @@ lazy val tokenImpl = (project in file("token-impl"))
   )
 
 val playJsonDerivedCodecs = "org.julienrf" %% "play-json-derived-codecs" % "4.0.0"
-val macwire = "com.softwaremill.macwire" %% "macros" % "2.2.5" % "provided"
+val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.0"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
-def commonSettings: Seq[Setting[_]] = Seq(excludeDependencies += "com.typesafe.conductr" % "lagom1-scala-conductr-bundle-lib_2.12")
+def commonSettings: Seq[Setting[_]] = Seq(resolvers ++= Seq(
+  "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
+  "Atlassian Releases" at "https://maven.atlassian.com/public/",
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
+  Resolver.jcenterRepo
+))
+
 
 lagomCassandraCleanOnStart in ThisBuild := true
 

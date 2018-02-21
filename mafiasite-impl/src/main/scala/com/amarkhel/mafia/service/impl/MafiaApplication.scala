@@ -7,6 +7,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceCo
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
 import play.api.libs.ws.ahc.AhcWSComponents
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 
 import scala.concurrent.ExecutionContext
 
@@ -36,7 +37,7 @@ abstract class MafiaApplication(context: LagomApplicationContext)
 
 class MafiaApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new MafiaApplication(context) with LagomDevModeServiceLocatorComponents
+    new MafiaApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
     new MafiaApplication(context) with LagomDevModeServiceLocatorComponents

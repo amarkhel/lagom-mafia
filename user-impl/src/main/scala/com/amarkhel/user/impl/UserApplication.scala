@@ -6,6 +6,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceCo
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
 import play.api.libs.ws.ahc.AhcWSComponents
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 
 abstract class UserApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
@@ -20,7 +21,7 @@ abstract class UserApplication(context: LagomApplicationContext)
 
 class UserApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new UserApplication(context) with LagomDevModeServiceLocatorComponents
+    new UserApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
     new UserApplication(context) with LagomDevModeServiceLocatorComponents

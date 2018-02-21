@@ -6,6 +6,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceCo
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
 import play.api.libs.ws.ahc.AhcWSComponents
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 
 abstract class TournamentApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
@@ -21,7 +22,7 @@ abstract class TournamentApplication(context: LagomApplicationContext)
 
 class TournamentApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new TournamentApplication(context) with LagomDevModeServiceLocatorComponents
+    new TournamentApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
     new TournamentApplication(context) with LagomDevModeServiceLocatorComponents

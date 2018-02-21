@@ -6,6 +6,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceCo
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
 import play.api.libs.ws.ahc.AhcWSComponents
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 
 abstract class TokenApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
@@ -20,7 +21,7 @@ abstract class TokenApplication(context: LagomApplicationContext)
 
 class TokenApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new TokenApplication(context) with LagomDevModeServiceLocatorComponents
+    new TokenApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
     new TokenApplication(context) with LagomDevModeServiceLocatorComponents

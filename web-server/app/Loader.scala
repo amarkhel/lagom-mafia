@@ -3,56 +3,42 @@ import com.amarkhel.mafia.processor.api.GameProcessor
 import com.amarkhel.mafia.service.api.MafiaService
 import com.amarkhel.token.api.TokenService
 import com.amarkhel.user.api.UserService
-import com.google.inject.Provides
 import com.lightbend.lagom.scaladsl.api.{LagomConfigComponent, ServiceAcl, ServiceInfo}
 import com.lightbend.lagom.scaladsl.client.LagomServiceClientComponents
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
-import com.mohiva.play.silhouette.api.actions._
 import com.mohiva.play.silhouette.api.crypto.{Crypter, CrypterAuthenticatorEncoder, Signer}
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
-import com.mohiva.play.silhouette.api.services.AuthenticatorService
 import com.mohiva.play.silhouette.api.util._
 import com.mohiva.play.silhouette.api.{Environment, EventBus, Silhouette, SilhouetteProvider}
 import com.mohiva.play.silhouette.crypto.{JcaCrypter, JcaCrypterSettings, JcaSigner, JcaSignerSettings}
+import com.softwaremill.macwire._
+import controllers.{Application, Assets, AssetsComponents, Auth, ChatController, MyAssets}
+//import filters.ContentSecurityPolicyFilter
+import com.mohiva.play.silhouette.api.actions._
+import com.mohiva.play.silhouette.api.services.AuthenticatorService
+import com.mohiva.play.silhouette.api.util.Clock
 import com.mohiva.play.silhouette.impl.authenticators.{CookieAuthenticator, CookieAuthenticatorService, CookieAuthenticatorSettings}
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import com.mohiva.play.silhouette.impl.util.{DefaultFingerprintGenerator, SecureRandomIDGenerator}
 import com.mohiva.play.silhouette.password.BCryptPasswordHasher
-import com.mohiva.play.silhouette.persistence.daos.DelegableAuthInfoDAO
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 import com.mohiva.play.silhouette.persistence.repositories.DelegableAuthInfoRepository
-import com.softwaremill.macwire._
-import controllers.{Application, Assets, AssetsComponents, Auth, ChatController, MyAssets}
-//import filters.ContentSecurityPolicyFilter
+import net.ceedubs.ficus.Ficus._
+import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import play.api.ApplicationLoader.Context
-import play.api.http.HttpErrorHandler
+import play.api._
 import play.api.i18n.I18nComponents
+import play.api.libs.mailer.{SMTPConfiguration, SMTPMailer}
 import play.api.libs.ws.ahc.AhcWSComponents
+import play.api.mvc.{BodyParsers, DefaultCookieHeaderEncoding}
 import play.filters.HttpFiltersComponents
 import play.filters.cors.CORSComponents
 import router.Routes
 import utils.silhouette._
-import play.api._
-import net.ceedubs.ficus.Ficus._
-import play.api.mvc.{BodyParsers, DefaultCookieHeaderEncoding}
+import utils.{ErrorHandler, Filters, MailService, Mailer}
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
-import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import play.api.libs.mailer.{MailerClient, SMTPConfiguration, SMTPMailer}
-import play.core.SourceMapper
-import utils.{ErrorHandler, Filters, MailService, Mailer}
-import com.mohiva.play.silhouette.api.services.AuthenticatorService
-import com.mohiva.play.silhouette.api.actions.{UnsecuredRequestHandlerBuilder, _}
-import com.mohiva.play.silhouette.api.util.{Clock, PlayHTTPLayer}
-import com.mohiva.play.silhouette.impl.authenticators.{CookieAuthenticator, CookieAuthenticatorService, CookieAuthenticatorSettings}
-import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import com.mohiva.play.silhouette.impl.util.{DefaultFingerprintGenerator, SecureRandomIDGenerator}
-import com.mohiva.play.silhouette.password.BCryptPasswordHasher
-import com.mohiva.play.silhouette.persistence.repositories.DelegableAuthInfoRepository
-import net.ceedubs.ficus.Ficus._
-import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import play.api.Configuration
-import play.api.routing.Router
 
 abstract class Web(context: Context) extends BuiltInComponentsFromContext(context)
   with HttpFiltersComponents
@@ -149,6 +135,6 @@ class WebGatewayLoader extends ApplicationLoader {
     case Mode.Dev =>
       (new Web(context) with LagomDevModeServiceLocatorComponents).application
     case _ =>
-      (new Web(context) with LagomDevModeServiceLocatorComponents).application
+      (new Web(context) with ConductRApplicationComponents).application
   }
 }

@@ -9,6 +9,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceCo
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomApplicationLoader, LagomServerComponents}
 import com.softwaremill.macwire.wire
 import play.api.libs.ws.ahc.AhcWSComponents
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 
 import scala.concurrent.ExecutionContext
 
@@ -30,8 +31,7 @@ abstract class ProcessorApplication(context: LagomApplicationContext)
 
 class ProcessorApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
-    new ProcessorApplication(context) with LagomDevModeServiceLocatorComponents
-
+    new ProcessorApplication(context) with ConductRApplicationComponents
   override def loadDevMode(context: LagomApplicationContext) =
     new ProcessorApplication(context) with LagomDevModeServiceLocatorComponents
 

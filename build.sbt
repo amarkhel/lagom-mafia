@@ -22,6 +22,7 @@ lazy val webServer = (project in file("web-server"))
     routesImport += "config.Routes._",
     includeFilter in (Assets, LessKeys.less) := "*.less",
     LessKeys.compress := true,
+    BundleKeys.endpoints := Map("webserver" -> Endpoint("http", 11000, Set())),
     scalaJSProjects := clients,
     pipelineStages in Assets := Seq(scalaJSPipeline),
     pipelineStages := Seq(scalaJSProd, gzip),

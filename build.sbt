@@ -57,7 +57,7 @@ lazy val webServer = (project in file("web-server"))
       "com.iheart" %% "ficus" % "1.4.3",
       "com.typesafe.play" %% "play-mailer" % "6.0.1"
     )
-  ).enablePlugins(PlayScala && LagomPlay && SbtWeb).
+  ).enablePlugins(PlayScala && LagomPlay && SbtWeb && LagomScala).
   aggregate(clients.map(projectToRef): _*).
   dependsOn(common, mafiaSiteApi, processorApi, userApi, tokenApi, webSharedJvm)
 

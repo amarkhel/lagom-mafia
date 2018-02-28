@@ -1,7 +1,7 @@
 package com.amarkhel.token.impl
 
 import com.amarkhel.token.api.TokenService
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
@@ -24,7 +24,7 @@ class TokenApplicationLoader extends LagomApplicationLoader {
     new TokenApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
-    new TokenApplication(context) with LagomDevModeServiceLocatorComponents
+    new TokenApplication(context) with LagomDevModeComponents
 
   override def describeService = Some(readDescriptor[TokenService])
 }

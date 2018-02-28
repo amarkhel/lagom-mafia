@@ -1,7 +1,7 @@
 package com.amarkhel.tournament.impl
 
 import com.amarkhel.tournament.api.TournamentService
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
@@ -25,7 +25,7 @@ class TournamentApplicationLoader extends LagomApplicationLoader {
     new TournamentApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
-    new TournamentApplication(context) with LagomDevModeServiceLocatorComponents
+    new TournamentApplication(context) with LagomDevModeComponents
 
   override def describeService = Some(readDescriptor[TournamentService])
 }

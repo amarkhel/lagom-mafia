@@ -2,7 +2,7 @@ package com.amarkhel.mafia.service.impl
 
 import com.amarkhel.mafia.service.api.MafiaService
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
@@ -40,7 +40,7 @@ class MafiaApplicationLoader extends LagomApplicationLoader {
     new MafiaApplication(context) with ConductRApplicationComponents
 
   override def loadDevMode(context: LagomApplicationContext) =
-    new MafiaApplication(context) with LagomDevModeServiceLocatorComponents
+    new MafiaApplication(context) with LagomDevModeComponents
 
   override def describeService = Some(readDescriptor[MafiaService])
 }

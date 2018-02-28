@@ -4,7 +4,7 @@ import akka.stream.Materializer
 import com.amarkhel.mafia.processor.api.GameProcessor
 import com.amarkhel.mafia.service.api.MafiaService
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeServiceLocatorComponents
+import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomApplicationLoader, LagomServerComponents}
 import com.softwaremill.macwire.wire
@@ -33,7 +33,7 @@ class ProcessorApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =
     new ProcessorApplication(context) with ConductRApplicationComponents
   override def loadDevMode(context: LagomApplicationContext) =
-    new ProcessorApplication(context) with LagomDevModeServiceLocatorComponents
+    new ProcessorApplication(context) with LagomDevModeComponents
 
   override def describeService = Some(readDescriptor[GameProcessor])
 }

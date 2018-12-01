@@ -5,7 +5,6 @@ import java.time.LocalDateTime
 import com.amarkhel.mafia.common._
 import com.amarkhel.mafia.dto.GameContent
 import com.amarkhel.mafia.utils.TimeUtils._
-
 import scalaz.Scalaz._
 import scalaz._
 
@@ -84,7 +83,10 @@ object Parser {
         case Some(list) => (list.head.time, list.success)
       }
     } catch {
-      case e:Throwable => (lastTime, s"Could not find handler for $str".failureNel)
+      case e:Throwable => {
+        e.printStackTrace
+        (lastTime, s"Could not find handler for $str".failureNel)
+      }
     }
   }
 
@@ -93,7 +95,7 @@ object Parser {
     else handle(state, str.replaceAll("\u2028", ""), start, players)
   }
 
-  private def needSkip(str:String) = skipPatterns.foldLeft(false)((a, b) => b.findFirstMatchIn(str).isDefined || a)
+  def needSkip(str:String) = skipPatterns.foldLeft(false)((a, b) => b.findFirstMatchIn(str).isDefined || a)
 
   private def skipPatterns = List(
     """\[ОМОНОВЕЦ\] [\s\S]*Минуточку, распределяем роли.[\s\S]*""",
@@ -101,6 +103,7 @@ object Parser {
     """\[ОМОНОВЕЦ\] [\s\S]*Игра началась![\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Внимание! Сейчас будет следующий ход.[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Считаем трупы![\s\S]*""",
+    """\[ОМОНОВЕЦ\] [\s\S]*Договориться не смогли.""",
     """\[ОМОНОВЕЦ\] [\s\S]*Договориться не смогли. (?:Результатов[\s\S]*|В тюрьму никто[\s\S]*)""",
     """\[ОМОНОВЕЦ\] [\s\S]*<b>Сержант получает повышение.[\s\S]*Мои поздравления, господин комиссар.[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Маньяк проспал свой ход[\s\S]*""",
@@ -112,15 +115,25 @@ object Parser {
     """\[ОМОНОВЕЦ\] [\s\S]*<b> (?:убит|убита|убит\(-а\)|убит\(а\))[\s\S]*</b>[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*<b> (?:отправлен в тюрьму|отправлена в тюрьму|отправлен\(-а\) в тюрьму|отправлен\(а\) в тюрьму)[\s\S]*</b>[\s\S]*""",
     """[\s\S]*<span class=\"label label-success\">[\s\S]*""",
+    """\[ОМОНОВЕЦ\] [\s\S]*Команда (.+?)к случайному стату(.+?)[\s\S]*""",
+    """\[ОМОНОВЕЦ\] [\s\S]*Никто не получает бонусов: мёртвым они не нужны.[\s\S]*""",
     """\[ОМОНОВЕЦ\][\s\S]*оспользовался правом выйти из партии[\s\S]*"""
   ).map(_.r)
 
   private def actions[T>:GameEvent] = {
-    Map(
+    List(
       """\[ОМОНОВЕЦ\][\s\S]*(?:Игрок | <b>)(.+?) (?:вышел|вышла|вышел\(-ла\)) из партии по таймауту.[\s\S]*""".r ->
         event((pl, l, t) => {
           Timeouted(pl.find(_.name == l.head.replaceAll("<b>", "")).get, t)
         }),
+      """\[ОМОНОВЕЦ\][\s\S]*Выигрыш игрока(.+?) составил (.+?) маф.[\s\S]*""".r ->
+        event((_, l, t) => {
+          EarnedMaf(l.head, l.last.toDouble, t)
+        }),
+      """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-city">)(.+?)нанёс удар по репутации жителя города (.+) (.+?)(?:</b>|</span>)""".r ->
+        event((_, list, t) => SumrakVoted(list.head, list(1), t, list.last.replace("−", "").toInt)),
+      """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-maf">)Мафиози (.+?)наносит удар по жизни (.+) (.+?)(?:</b>|</span>)""".r ->
+        event((_, list, t) => SumrakVoted(list.head, list(1), t, list.last.replace("−", "").toInt)),
       """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-city">)(.+?)xочет отправить в тюрьму (.+)(?:</b>|</span>)""".r ->
         voteEvent,
       """\[ОМОНОВЕЦ\][\s\S]*Мафия [\s\S]*убить жителя города, но врач успел вовремя и спас игрока от смертельных ран.""".r ->
@@ -151,19 +164,19 @@ object Parser {
         voteEvent,
       """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline; color: #990000;">|<span class="move move-maf">)Босс (.+?)морозит (.+).(?:</b>|</span>)""".r ->
         voteEvent,
-      """\[ОМОНОВЕЦ\][\s\S]*<b>(.+?)(?:отправлен в тюрьму|отправлена в тюрьму|отправлен\(-а\) в тюрьму|отправлен\(а\) в тюрьму)[\s\S]*</b>[\s\S]*""".r ->
+      """\[ОМОНОВЕЦ\][\s\S]*Рассвирепевший ОМОНОВЕЦ, не разбираясь, кто прав, кто виноват, решил, что  <b>(.+?)(?:будет отправлен в тюрьму|будет отправлена в тюрьму|будет отправлен\(-а\) в тюрьму|будет отправлен\(а\) в тюрьму)[\s\S]*</b>[\s\S]*""".r->
+        event((_, _, t) => OmonHappened(t)),
+      """\[ОМОНОВЕЦ\][\s\S]*<b>(.+?)(?:отправлен в тюрьму|отправлена в тюрьму|отправлен\(-а\) в тюрьму|отправлен\(а\) в тюрьму|имеет очень низкую репутацию в городе.)[\s\S]*</b>[\s\S]*""".r ->
         event((pl, l, t) => {
-          Prisoned(pl.find(_.name == l.head.trim).get, t)
+          Prisoned(pl.find(_.name == l.head.trim).orElse(pl.find(_.name == l.head.trim.replaceAll(" ", "&nbsp;"))).get, t)
         }),
       """\[ОМОНОВЕЦ\][\s\S]*Договориться не смогли. Рассвирепевший ОМОНОВЕЦ решает, кто отправится в тюрьму[\s\S]*""".r->
         event((_, _, t) => OmonHappened(t)),
-      """\[ОМОНОВЕЦ\][\s\S]*Рассвирепевший ОМОНОВЕЦ, не разбираясь, кто прав, кто виноват, решил, что  <b>(.+?)(?:будет отправлен в тюрьму|будет отправлена в тюрьму|будет отправлен\(-а\) в тюрьму|будет отправлен\(а\) в тюрьму)[\s\S]*</b>[\s\S]*""".r->
-        event((_, _, t) => OmonHappened(t)),
-      """\[ОМОНОВЕЦ\][\s\S]*<b>(.+?)(?:убит|убита|убит\(-а\)|убит\(а\))[\s\S]*</b>[\s\S]*""".r ->
+      """\[ОМОНОВЕЦ\][\s\S]*<b>(.+?)(?:убит|убита|убит\(-а\)|убит\(а\))</b>[\s\S]*""".r ->
         event((pl, l, t) => {
           Killed(pl.find(_.name == l.head.trim).get, t)
         }),
-      """[\s\S]*Авторитет<b>(.+?)</b>остановил партию номер[\s\S]*""".r ->
+      """[\s\S]*<b>(.+?)</b> остановил партию номер[\s\S]*""".r ->
         event((_, l, t) => GameStopped(l.head, t)),
       """\[ОМОНОВЕЦ\][\s\S]*<b>Мафия никого не убила.</b>[\s\S]*""".r ->
         event((_, l, t) => MafiaNotKilled(t)),

@@ -15,13 +15,13 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
 
-class MafiaServiceIntegrationTest extends WordSpec with Matchers with BeforeAndAfterAll{
+class MafiaServiceIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll{
 
   val l = List(3893387, 3892483, 2678534, 2461895, 3787059, 3812706, 3820533, 3746301, 3766199, 3770955, 2275974, 2295008, 2299165, 2720229, 2815241, 3694168, 3787711, 3789678, 3792003, 2727416, 3787059, 3795078, 3799219, 3799221, 3799140, 3801123, 3800986, 3801621, 3801308, 3801437, 3801470, 3804943, 3804957, 3804325, 3804409, 3804741, 2284461)
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
     new LagomApplication(ctx) with MafiaComponentsCommon with LocalServiceLocator with AhcWSComponents with TestTopicComponents
   }
-  import scala.concurrent.ExecutionContext.Implicits.global
+  //import scala.concurrent.ExecutionContext.Implicits.global
   val service = server.serviceClient.implement[MafiaService]
 
   override def afterAll = server.stop()
@@ -39,7 +39,7 @@ class MafiaServiceIntegrationTest extends WordSpec with Matchers with BeforeAndA
     //should skip 2166203
     "should load game for given id" in {
       for {
-        game <- service.loadGame(2668067, -1).invoke()
+        game <- service.loadGame(3880967, -1).invoke()
       } yield {
         game.id should be(2668067)
         game.playersSize should be(7)
@@ -57,7 +57,7 @@ class MafiaServiceIntegrationTest extends WordSpec with Matchers with BeforeAndA
         game.players(5).role should be(Role.CITIZEN)
         game.players(6).name should be("mifo")
         game.players(6).role should be(Role.KOMISSAR)
-        game.events.size should be(86)
+        game.events.size should be(87)
         game.finish should be(LocalDateTime.of(2012, 10, 26, 23, 56, 49))
         game.start should be(LocalDateTime.of(2012, 10, 26, 23, 51, 14).toString)
         val games = for {
@@ -68,6 +68,7 @@ class MafiaServiceIntegrationTest extends WordSpec with Matchers with BeforeAndA
       }
     }
     "should load game filtered by round" in {
+
       for {
         game <- service.loadGame(2668067, 1).invoke()
       } yield {
@@ -126,6 +127,15 @@ class MafiaServiceIntegrationTest extends WordSpec with Matchers with BeforeAndA
         } yield Await.result(res, 10 seconds)
         games.size should be(l.size)
       }
+    }
+
+    "should load none if game invalid " in {
+      val thrown = intercept[NotFound] {
+        val f = service.loadGame(3903181, -1).invoke()
+        val r = Await.result(f, 10 seconds)
+      }
+      thrown.asInstanceOf[NotFound].errorCode.http shouldBe 404
+      thrown.asInstanceOf[NotFound].getMessage should include ("Game 3903181 is invalid")
     }
     "should load none if game not exist id " in {
       val thrown = intercept[NotFound] {

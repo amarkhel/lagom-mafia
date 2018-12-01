@@ -6,24 +6,25 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink._
 import akka.stream.scaladsl.{Sink, Source}
 import com.amarkhel.mafia.common.Game._
-import com.amarkhel.mafia.common.Location
+import com.amarkhel.mafia.service.impl.Util._
 import com.amarkhel.mafia.utils.TextUtils._
 import com.amarkhel.mafia.utils.TimeUtils._
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
-import Util._
+import scalaz.Scalaz._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import scalaz.Scalaz._
 
 class ExtractorFlow(mafiaService:MafiaServiceBackend, session:CassandraSession, registry: PersistentEntityRegistry)(implicit materializer:Materializer, ec:ExecutionContext) extends Extractor{
 
   private val log = LoggerFactory.getLogger(classOf[ExtractorFlow])
   private val GAME_REGEX = """(?s)[\s\S]*<a href="/log/(.*)" target="_blank">[\s\S]*(?:<span class="zag_tab"><b>VIP-клуб</b>[\s\S]*<b>|<span class="zag_tab"><b>)(.*)(?:</b>[\s\S]*</span>|<\b><\span>)[\s\S]*align="absmiddle" alt="(.*)" title[\s\S]*""".r
   private val STOPPED = "Партия остановлена Авторитетом"
-  private val PARALLELISM = 10
+  private val PARALLELISM = 2
+  private val ignoredGames = ConfigFactory.load().getIntList("invalidGames")
 
   def extractGames(countDays:Int = -1): List[Int]= {
     (for {
@@ -43,11 +44,11 @@ class ExtractorFlow(mafiaService:MafiaServiceBackend, session:CassandraSession, 
   }
 
   private def filterGame(data: (String, String, String), date:LocalDate) = {
-    if(data._3 == STOPPED) {
+    if(data._3 == STOPPED || ignoredGames.contains(data._1.toInt)) {
       entity.ask(FinishGame(stoppedGame(data._1.toInt, data._2, date)))
-      log.warn(s"Stooped game ${data._1.toInt} is saved")
+      log.warn(s"Stopped game ${data._1.toInt} is saved")
       true
-    } else data._2 == Location.SUMRAK.name
+    } else false //data._2 == Location.SUMRAK.name
   }
 
   private def handleMissed(res: Future[(Int, Int, Int)], countDays:Int) = Try{
@@ -91,7 +92,7 @@ class ExtractorFlow(mafiaService:MafiaServiceBackend, session:CassandraSession, 
         case _ => log.error(s"not handled game template is: $b"); a
       }
     }
-    log.error(s"not handled game ids are: ${wrong.mkString(",")}")
+    log.error(s"not handled game ids are: ${wrong.mkString(",")}, count of handled games are ${ok.size}")
     ok
   }
 

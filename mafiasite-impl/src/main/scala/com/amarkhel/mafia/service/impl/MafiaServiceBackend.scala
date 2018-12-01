@@ -22,8 +22,11 @@ import scalaz.Scalaz._
 import scalaz._
 import MafiaServiceBackend._
 import com.amarkhel.mafia.common.{GameEvent => GE}
+import com.typesafe.config.ConfigFactory
 
 class MafiaServiceBackend(registry: PersistentEntityRegistry, system: ActorSystem, mafiaSite:MafiaHubAPI)(implicit ec: ExecutionContext){
+
+  private val ignoredGames = ConfigFactory.load().getIntList("invalidGames")
 
   def clearAll = {
     extractorEntity.ask(ClearCommand)
@@ -69,13 +72,18 @@ class MafiaServiceBackend(registry: PersistentEntityRegistry, system: ActorSyste
   }
 
   def loadGame(id: Int, lastRound:Int): Future[Game] = {
-    gameEntity(id).ask(LoadGame).flatMap {
-      case Some(game) => Future(dropToRound(game, lastRound))
-      case None => fetchGame(id).map {
-        case \/-(game) => dropToRound(game, lastRound)
-        case -\/(error) => notFound(error, s"Game $id not found:")
+    val result = if(ignoredGames.contains(id)) {
+      notFound(new Exception("Game is invalid"), s"Game $id is invalid:")
+    } else {
+      gameEntity(id).ask(LoadGame).flatMap {
+        case Some(game) => Future(dropToRound(game, lastRound))
+        case None => fetchGame(id).map {
+          case \/-(game) => dropToRound(game, lastRound)
+          case -\/(error) => notFound(error, s"Game $id not found:")
+        }
       }
-    }.transform(handleSuccess, handleError(s"Game $id not found:"))
+    }
+    result.transform(handleSuccess, handleError(s"Game $id not found:"))
   }
 
   private def dropToRound(game:Game, round:Int) = {

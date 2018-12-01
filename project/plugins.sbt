@@ -12,7 +12,7 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.27")
 
 addSbtPlugin("com.lightbend.conductr" % "sbt-conductr" % "2.7.2")
 
-addSbtPlugin("com.lightbend.lagom" % "lagom-sbt-plugin" % "1.4.0-RC1") 
+addSbtPlugin("com.lightbend.lagom" % "lagom-sbt-plugin" % "1.4.9") 
 
 // Resolvers
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"

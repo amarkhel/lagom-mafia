@@ -9,7 +9,8 @@ object TournamentResult extends Serializable {
   case object OMON_2 extends TournamentResult{val descr = "Двойной омон"}
   case object OMON_3 extends TournamentResult{val descr = "Тройной омон"}
   case object OMON_4 extends TournamentResult{val descr = "Четверной омон"}
-  val values:List[TournamentResult] = List(GOROD_WIN, MAFIA_WIN, OMON_1, OMON_2, OMON_3, OMON_4)
+  case object DRAW extends TournamentResult{val descr = "Ничья"}
+  val values:List[TournamentResult] = List(GOROD_WIN, MAFIA_WIN, OMON_1, OMON_2, OMON_3, OMON_4,DRAW)
 
   def byDescription(descr:String):TournamentResult = {
     require(descr != null)

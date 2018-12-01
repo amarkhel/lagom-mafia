@@ -268,5 +268,9 @@ def commonSettings: Seq[Setting[_]] = Seq(resolvers ++= Seq(
 ))
 
 
-lagomCassandraCleanOnStart in ThisBuild := true
-
+lagomCassandraCleanOnStart in ThisBuild := false
+lagomKafkaCleanOnStart in ThisBuild := false
+lagomCassandraEnabled in ThisBuild := false
+lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "http://localhost:9042")
+lagomKafkaEnabled in ThisBuild := false
+lagomKafkaAddress in ThisBuild := "localhost:9092"

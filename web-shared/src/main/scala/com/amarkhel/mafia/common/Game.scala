@@ -38,6 +38,7 @@ case class RoundStarted(kind:RoundType, time:Int) extends GameEvent
 case class RoundEnded(time:Int) extends GameEvent
 case class MessageSent(message:String, time:Int) extends GameEvent
 case class Voted(target:String, destination:String, time:Int) extends GameEvent
+case class SumrakVoted(target:String, destination:String, time:Int, damage:Int) extends GameEvent
 case class Killed(player:Gamer, time:Int) extends GameEvent
 case class RecoveredByDoctor(time:Int) extends GameEvent
 case class Prisoned(player:Gamer, time:Int) extends GameEvent
@@ -46,6 +47,7 @@ case class OmonHappened(time:Int) extends GameEvent
 case class PrivateMessageSent(from:String, to:String, time:Int) extends GameEvent
 case class GameStopped(avtor:String, time:Int) extends GameEvent
 case class MafiaNotKilled(time:Int) extends GameEvent
+case class EarnedMaf(player:String, amount:Double, time:Int) extends GameEvent
 
 sealed trait FinishStatus
 
@@ -91,6 +93,7 @@ case class Game(id: Int, events:List[GameEvent], status:FinishStatus, players:Li
         lastEvent.asInstanceOf[GameCompleted].message match {
           case "Вся мафия убита" => TournamentResult.GOROD_WIN
           case "Мафия победила" => TournamentResult.MAFIA_WIN
+          case "Ничья" => TournamentResult.DRAW
         }
       }
     }

@@ -1,14 +1,24 @@
 import sbt.Project.projectToRef
 import com.typesafe.sbt.web.SbtWeb.autoImport._
 import com.typesafe.sbt.less.Import.LessKeys
+import ByteConversions._
+import sbt.Keys.licenses
+
+
+BundleKeys.nrOfCpus := 0.1
+BundleKeys.memory := 384.MiB
+BundleKeys.diskSpace := 10.MB
+bintrayReleaseOnPublish := true
+bintrayVcsUrl := Some("https://github.com/amarkhel/lagom-mafia.git")
+bintrayOrganization := None
+publishMavenStyle := false
 
 lazy val root = (project in file("."))
   .settings(name := "mafia")
   .aggregate(mafiaSiteApi, mafiaSiteImpl, processorApi, processorImpl, userApi, userImpl,
     tokenApi, tokenImpl, tournamentApi, tournamentImpl, webServer)
-  .settings(commonSettings: _*)
+  .settings(commonSettings: _*).enablePlugins(JavaAppPackaging)
 
-organization in ThisBuild := "com.amarkhel"
 
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.12.4"
@@ -28,15 +38,10 @@ lazy val webServer = (project in file("web-server"))
     pipelineStages := Seq(scalaJSProd, gzip),
     // triggers scalaJSPipeline when using compile or continuous compilation
     compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
-    resolvers ++= Seq(
-      "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
-      "Atlassian Releases" at "https://maven.atlassian.com/public/",
-      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      Resolver.jcenterRepo
-    ),
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       filters,
+      "com.typesafe.akka" %% "akka-cluster" % "2.5.18",
+      "com.typesafe.akka" %% "akka-remote" % "2.5.18",
       "com.typesafe.conductr" %% "play26-conductr-bundle-lib" % "2.1.1",
       "com.vmunier" %% "scalajs-scripts" % "1.1.1",
       "org.webjars" %% "webjars-play" % "2.6.3",
@@ -58,11 +63,11 @@ lazy val webServer = (project in file("web-server"))
       "com.iheart" %% "ficus" % "1.4.3",
       "com.typesafe.play" %% "play-mailer" % "6.0.1"
     )
-  ).enablePlugins(PlayScala && LagomPlay && SbtWeb && LagomScala).
+  ).enablePlugins(PlayScala && LagomPlay && SbtWeb && LagomScala && JavaAppPackaging).
   aggregate(clients.map(projectToRef): _*).
   dependsOn(common, mafiaSiteApi, processorApi, userApi, tokenApi, webSharedJvm)
 
-lazy val webClient = (project in file("web-client")).settings(
+lazy val webClient = (project in file("web-client")).settings(commonSettings: _*).settings(
   scalaJSUseMainModuleInitializer := false,
   scalaJSMainModuleInitializer := None,
   libraryDependencies ++= Seq(
@@ -116,7 +121,6 @@ lazy val webSharedJs = webShared.js
 lazy val common = (project in file("com.amarkhel.mafia.common"))
   .settings(commonSettings: _*)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslApi,
       lagomScaladslServer % Optional,
@@ -131,7 +135,6 @@ lazy val common = (project in file("com.amarkhel.mafia.common"))
 lazy val processorApi = (project in file("processor-api"))
   .settings(commonSettings: _*)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslApi,
       playJsonDerivedCodecs
@@ -141,7 +144,6 @@ lazy val processorApi = (project in file("processor-api"))
 lazy val mafiaSiteApi = (project in file("mafiasite-api"))
   .settings(commonSettings: _*)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslApi,
       playJsonDerivedCodecs
@@ -150,10 +152,9 @@ lazy val mafiaSiteApi = (project in file("mafiasite-api"))
 
 lazy val processorImpl = (project in file("processor-impl"))
   .settings(commonSettings: _*)
-  .enablePlugins(LagomScala)
+  .enablePlugins(LagomScala, JavaAppPackaging)
   .dependsOn(processorApi, mafiaSiteApi)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       lagomScaladslTestKit,
@@ -167,10 +168,9 @@ lazy val processorImpl = (project in file("processor-impl"))
 
 lazy val mafiaSiteImpl = (project in file("mafiasite-impl"))
   .settings(commonSettings: _*)
-  .enablePlugins(LagomScala)
+  .enablePlugins(LagomScala, JavaAppPackaging)
   .dependsOn(mafiaSiteApi)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       lagomScaladslTestKit,
@@ -185,20 +185,17 @@ lazy val mafiaSiteImpl = (project in file("mafiasite-impl"))
 lazy val tournamentApi = (project in file("tournament-api"))
   .settings(commonSettings: _*)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
-      lagomScaladslApi,
-      playJsonDerivedCodecs
+      lagomScaladslApi
     )
   )
   .dependsOn(common)
 
 lazy val tournamentImpl = (project in file("tournament-impl"))
   .settings(commonSettings: _*)
-  .enablePlugins(LagomScala)
+  .enablePlugins(LagomScala, JavaAppPackaging)
   .dependsOn(tournamentApi)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       macwire,
@@ -209,10 +206,8 @@ lazy val tournamentImpl = (project in file("tournament-impl"))
 lazy val userApi = (project in file("user-api"))
   .settings(commonSettings: _*)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslApi,
-      playJsonDerivedCodecs,
       "com.mohiva" %% "play-silhouette" % "5.0.3"
     )
   )
@@ -220,13 +215,16 @@ lazy val userApi = (project in file("user-api"))
 
 lazy val userImpl = (project in file("user-impl"))
   .settings(commonSettings: _*)
-  .enablePlugins(LagomScala)
+  .enablePlugins(LagomScala, JavaAppPackaging)
   .dependsOn(userApi)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       macwire,
+      "com.typesafe.play" %% "play-server" % "2.6.20",
+      "com.typesafe.play" %% "play-openid" % "2.6.20",
+      "com.typesafe.play" %% "play-logback" % "2.6.20",
+      "com.typesafe.play" %% "filters-helpers" % "2.6.20",
       scalaTest
     )
   )
@@ -234,7 +232,6 @@ lazy val userImpl = (project in file("user-impl"))
 lazy val tokenApi = (project in file("token-api"))
   .settings(commonSettings: _*)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslApi,
       "com.typesafe.play" % "play-json-joda_2.12" % "2.6.0"
@@ -244,13 +241,11 @@ lazy val tokenApi = (project in file("token-api"))
 
 lazy val tokenImpl = (project in file("token-impl"))
   .settings(commonSettings: _*)
-  .enablePlugins(LagomScala)
+  .enablePlugins(LagomScala, JavaAppPackaging)
   .dependsOn(tokenApi)
   .settings(
-    version := "1.0-SNAPSHOT",
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
-      playJsonDerivedCodecs,
       macwire,
       scalaTest
     )
@@ -260,17 +255,21 @@ val playJsonDerivedCodecs = "org.julienrf" %% "play-json-derived-codecs" % "4.0.
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.0"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
-def commonSettings: Seq[Setting[_]] = Seq(resolvers ++= Seq(
-  "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
+
+def commonSettings: Seq[Setting[_]] = Seq(
+  resolvers ++= Seq(
+    "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
   "Atlassian Releases" at "https://maven.atlassian.com/public/",
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
+  //Resolver.url("amarkhel", url("https://dl.bintray.com/amarkhel/maven"))(Resolver.ivyStylePatterns),
   Resolver.jcenterRepo
-))
+  ), licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")), version := "1.1",
+  envVars := Map("CLUSTER_IP" -> "127.0.0.1"))
 
 
-lagomCassandraCleanOnStart in ThisBuild := false
-lagomKafkaCleanOnStart in ThisBuild := false
-lagomCassandraEnabled in ThisBuild := false
-lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "http://localhost:9042")
-lagomKafkaEnabled in ThisBuild := false
+lagomCassandraCleanOnStart in ThisBuild := true
+lagomKafkaCleanOnStart in ThisBuild := true
+lagomCassandraEnabled in ThisBuild := true
+//lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "http://localhost:9042")
+lagomKafkaEnabled in ThisBuild := true
 lagomKafkaAddress in ThisBuild := "localhost:9092"

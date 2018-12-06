@@ -41,6 +41,7 @@ class MafiaServiceIntegrationTest extends AsyncWordSpec with Matchers with Befor
       for {
         game <- service.loadGame(3880967, -1).invoke()
       } yield {
+        //game.events.foreach(println)
         game.id should be(2668067)
         game.playersSize should be(7)
         game.players(0).name should be("onanetvoya")
@@ -60,11 +61,11 @@ class MafiaServiceIntegrationTest extends AsyncWordSpec with Matchers with Befor
         game.events.size should be(87)
         game.finish should be(LocalDateTime.of(2012, 10, 26, 23, 56, 49))
         game.start should be(LocalDateTime.of(2012, 10, 26, 23, 51, 14).toString)
-        val games = for {
+        /*val games = for {
           e <- l
           res = service.loadGame(e, -1).invoke()
         } yield Await.result(res, 10 seconds)
-        games.size should be(l.size)
+        games.size should be(l.size)*/
       }
     }
     "should load game filtered by round" in {

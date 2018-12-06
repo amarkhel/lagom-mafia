@@ -99,7 +99,7 @@ case class Game(id: Int, events:List[GameEvent], status:FinishStatus, players:Li
     }
   }
   private lazy val firstEvent = events.head.asInstanceOf[GameStarted]
-  private lazy val lastEvent = events(events.size - 2).asInstanceOf[GameCompleted]
+  private lazy val lastEvent = events.filter(_.isInstanceOf[GameCompleted]).last.asInstanceOf[GameCompleted]
   def playersSize = firstEvent.players.size
 
   def location = firstEvent.loc

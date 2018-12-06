@@ -85,7 +85,23 @@ class ParserTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
       groups.last._2.size shouldBe (1)
       groups.last._2.head shouldBe ("Мне придётся убить тебя")
     }
-
+    "should parse this" in {
+      val groups = Parser.findGroups("[ОМОНОВЕЦ] Честный  <b>ExZepT убит.</b>", "00:00", 0)
+      groups.size shouldBe (1)
+      groups.last._2.size shouldBe (1)
+      groups.last._2.head shouldBe ("ExZepT")
+    }
+    "should parse this 2" in {
+      val groups = Parser.findGroups("[GuessWho] 22:48 [Whisky Story] 21:52 [ОМОНОВЕЦ] Игра окончена. Вся мафия убита", "00:00", 0)
+      groups.size shouldBe (0)
+    }
+    "should parse this 3" in {
+      val a = System.getenv("CLUSTER_IP")
+      val groups = Parser.findGroups("22:48 [ОМОНОВЕЦ] Игра окончена. Вся мафия убита.", "00:00", 0)
+      groups.size shouldBe (1)
+      groups.last._2.size shouldBe (1)
+      groups.last._2.head shouldBe ("Вся мафия убита")
+    }
   }
 }
 

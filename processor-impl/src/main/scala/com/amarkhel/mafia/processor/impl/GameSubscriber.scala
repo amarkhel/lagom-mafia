@@ -15,8 +15,16 @@ class GameSubscriber(persistentEntityRegistry: PersistentEntityRegistry, mafiaSe
     case g: Game => {
       if (g.status == OK) {
         println(s"Handling game ${g.id}")
-        val summary = GameSummary(g.id, g.location, g.result, g.tournamentResult, g.playersSize, g.roundSize, g.players.map(p => (p.name, p.role)), g.finish.getYear, g.finish.getMonthValue, g.finish.getDayOfMonth)
-        entityRef(g.id).ask(SaveGameSummary(summary, g))
+        try {
+          val summary = GameSummary(g.id, g.location, g.result, g.tournamentResult, g.playersSize, g.roundSize, g.players.map(p => (p.name, p.role)), g.finish.getYear, g.finish.getMonthValue, g.finish.getDayOfMonth)
+          entityRef(g.id).ask(SaveGameSummary(summary, g))
+        } catch {
+          case e:Exception => {
+            println(s"${g.id} error")
+            if(g.id == 3929442) Future.successful(Done) else throw e
+          }
+        }
+
       }
       else Future.successful(Done)
     }

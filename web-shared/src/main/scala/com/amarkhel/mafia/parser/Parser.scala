@@ -34,7 +34,7 @@ object Parser {
     if (events.contains(GameStopped)) {
       Game.stoppedGame(gameSource.id, gameSource.location.name, gameSource.finish.toLocalDate)
     } else {
-      Game(gameSource.id, events.take(events.indexWhere(_.isInstanceOf[GameCompleted]) + 1) ++ List(GameResultRendered(gameSource.players, 0)), OK, gameSource.players, events.filter(_.isInstanceOf[RoundStarted]).size)
+      Game(gameSource.id, events.take(events.indexWhere(_.isInstanceOf[GameCompleted]) + 1) ++ events.filter(_.isInstanceOf[EarnedMaf]) ++ List(GameResultRendered(gameSource.players, 0)), OK, gameSource.players, events.filter(_.isInstanceOf[RoundStarted]).size)
     }
   }
 
@@ -60,7 +60,7 @@ object Parser {
   }
 
   def findGroups(str:String, started:String, lastTime:Int) = {
-    val text = str.startsWith("[ОМОНОВЕЦ]") ? str | str.substring(5)
+    val text = str.startsWith("[ОМОНОВЕЦ]") ? str | str.substring(5).trim
     for {
       action <- actions.find(_._1.findFirstMatchIn(text).isDefined)
       time <- timeFromStart(str, started, lastTime)
@@ -152,7 +152,7 @@ object Parser {
         roundStarted(RoundType.CITIZEN),
       """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline; color: lightgreen;">|<span class="move move-positive">)Врач (.+?)пытается вылечить (.+).(?:</b>|</span>)""".r ->
         voteEvent,
-      """\[ОМОНОВЕЦ\][\s\S]*Игра окончена.(.+).""".r ->
+      """^\[ОМОНОВЕЦ\][\s\S]*Игра окончена.(.+).""".r ->
         event((_, l, t) => GameCompleted(l.head.trim, t)),
       """\[ОМОНОВЕЦ\][\s\S]*<b>(.+)</b>[\s\S]*что-то шепнул[\s\S]*<b>(.*?) </b>[\s\S]*""".r ->
         event((_, l, t) => PrivateMessageSent(l.head.trim, l.last.trim, t)),
@@ -172,7 +172,7 @@ object Parser {
         }),
       """\[ОМОНОВЕЦ\][\s\S]*Договориться не смогли. Рассвирепевший ОМОНОВЕЦ решает, кто отправится в тюрьму[\s\S]*""".r->
         event((_, _, t) => OmonHappened(t)),
-      """\[ОМОНОВЕЦ\][\s\S]*<b>(.+?)(?:убит|убита|убит\(-а\)|убит\(а\))</b>[\s\S]*""".r ->
+      """\[ОМОНОВЕЦ\][\s\S]*<b>(.+?)(?:убит|убита|убит\(-а\)|убит\(а\)|убита.|убит\(-а\).|убит\(а\).|убит.)</b>[\s\S]*""".r ->
         event((pl, l, t) => {
           Killed(pl.find(_.name == l.head.trim).get, t)
         }),

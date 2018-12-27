@@ -5,18 +5,23 @@ import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
-import play.api.libs.ws.ahc.AhcWSComponents
 import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
+import play.api.libs.ws.ahc.AhcWSComponents
 
-abstract class TournamentApplication(context: LagomApplicationContext)
-  extends LagomApplication(context)
-    with AhcWSComponents
-    with CassandraPersistenceComponents {
+import scala.concurrent.ExecutionContext
 
+trait TournamentComponents extends LagomServerComponents with CassandraPersistenceComponents {
+  implicit val mat = materializer
+  implicit def executionContext: ExecutionContext
   override lazy val lagomServer = serverFor[TournamentService](wire[TournamentServiceImpl])
   override lazy val jsonSerializerRegistry = TournamentSerializerRegistry
-  val service = serviceClient.implement[TournamentService]
   persistentEntityRegistry.register(wire[TournamentEntity])
+  readSide.register(wire[Processor])
+}
+
+abstract class TournamentApplication(context: LagomApplicationContext) extends LagomApplication(context) with AhcWSComponents with TournamentComponents {
+  implicit override val mat = materializer
+  val service = serviceClient.implement[TournamentService]
   wire[Scheduler]
 }
 

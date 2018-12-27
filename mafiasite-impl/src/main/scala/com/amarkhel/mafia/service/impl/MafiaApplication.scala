@@ -12,6 +12,7 @@ import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationCompone
 import scala.concurrent.ExecutionContext
 
 trait MafiaComponentsCommon extends LagomServerComponents with CassandraPersistenceComponents {
+  implicit val mat = materializer
   val hub:MafiaHubAPI = wire[MafiaHubImpl]
   override lazy val lagomServer = serverFor[MafiaService](wire[MafiaServiceImpl])
   override lazy val jsonSerializerRegistry = SerializerRegistry
@@ -24,7 +25,6 @@ trait MafiaComponentsCommon extends LagomServerComponents with CassandraPersiste
 }
 
 trait MafiaComponentsAll extends MafiaComponentsCommon {
-  implicit val mat = materializer
   val extractor = wire[ExtractorFlow]
   wire[Scheduler]
 

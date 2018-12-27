@@ -1,3 +1,0 @@
-@import com.amarkhel.user.api.User
-@(title: String, tab:String, styles: Html = Html(""), scripts: Html = Html(""), modals: Html = Html(""))(content: Html)(implicit loggedUser: User, messages: Messages)
-@default(title, loggedUser = Some(loggedUser), tab, styles, scripts, modals)(content)(messages)

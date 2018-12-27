@@ -12,3 +12,8 @@ case class AdminAction(anyOf: String*) extends Authorization[User, CookieAuthent
     user.isAdmin
   }
 }
+
+object AdminAction {
+  def isAuthorized(user: User): Boolean =
+    user.isAdmin
+}

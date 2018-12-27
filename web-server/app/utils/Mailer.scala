@@ -27,5 +27,4 @@ class Mailer @Inject() (ms: MailService) {
       bodyText = mails.forgotPasswordTxt(email, link)
     )
   }
-
 }

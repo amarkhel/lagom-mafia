@@ -1,7 +1,8 @@
-@(signInForm: Form[(String, String, Boolean)])(implicit request: RequestHeader, messages: Messages)
 @import b3.vertical.fieldConstructor
 @import controllers.routes
-@default("Вход") {
+@(signInForm: Form[(String, String, Boolean)])(implicit request: RequestHeader, messages: Messages)
+
+@views.html.layout.notLogged("Вход")(None) {
 	@tags.alertFromRequest(request, "error")
 	@b3.formCSRF(routes.Auth.authenticate) {
 		<fieldset>

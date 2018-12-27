@@ -1,24 +1,21 @@
 package controllers
 
-import java.time.{Duration, Instant, ZoneId, ZonedDateTime}
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.{Date, UUID}
-
-import com.amarkhel.user.api.{User, UserService}
-import play.api.i18n.{Messages, MessagesApi}
+import com.amarkhel.user.api.User
+import com.mohiva.play.silhouette.api.{Environment, Silhouette}
+import com.mohiva.play.silhouette.api.actions.{SecuredRequest, UserAwareRequest}
+import play.api.Logger
+import play.api.i18n.MessagesApi
 import play.api.mvc._
+import utils.silhouette.MyEnv
 
-import scala.concurrent.{ExecutionContext, Future}
+abstract class BaseController(val silhouette: Silhouette[MyEnv], messagesApi: MessagesApi, cc:ControllerComponents) extends AbstractController(cc) {
 
-abstract class BaseController(cc: ControllerComponents, messagesApi: MessagesApi, userService: UserService)(implicit ec: ExecutionContext) extends AbstractController(cc) {
-/*  protected def withUser[T](block: Option[String] => T)(implicit rh: RequestHeader): T = {
-    block(rh.session.get("user").map(identity))
-  }
+  val logger = Logger(getClass)
+  implicit def securedRequest2User[A](implicit request: SecuredRequest[MyEnv, A]): User = request.identity
+  implicit def userAwareRequest2UserOpt[A](implicit request: UserAwareRequest[MyEnv, A]): Option[User] = request.identity
+  def env: Environment[MyEnv] = silhouette.env
 
-  protected def requireUser(block: String => Future[Result])(implicit rh: RequestHeader): Future[Result] = withUser {
-    case Some(user) => block(user)
-    case None => Future.successful(Redirect(routes.Main.index))
-  }
-  */
+  def SecuredAction = silhouette.SecuredAction
+  def UnsecuredAction = silhouette.UnsecuredAction
+  def UserAwareAction = silhouette.UserAwareAction
 }

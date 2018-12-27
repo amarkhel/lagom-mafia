@@ -46,17 +46,7 @@ class ExtractorEntity extends PersistentEntity {
         }
   }
 
-  override def initialState = ExtractorState(ExtractorEntity.firstDay)
-}
-
-object ExtractorEntity {
-  val config = ConfigFactory.load()
-  val firstDay = if (config.hasPath("initial")){
-    Day(config.getInt("initial.year"), config.getInt("initial.month"), config.getInt("initial.day"))
-  } else {
-    val now = LocalDateTime.now()
-    Day(now.getYear, now.getMonthValue, now.getDayOfMonth)
-  }
+  override def initialState = ExtractorState(Util.firstDay)
 }
 
 case class ExtractorState(lastDay:Day)

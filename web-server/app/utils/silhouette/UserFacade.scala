@@ -10,6 +10,7 @@ import com.mohiva.play.silhouette.api.services.IdentityService
 import scala.concurrent.{ExecutionContext, Future}
 
 class UserFacade @Inject() (userService:UserService)(implicit executionContext:ExecutionContext) extends IdentityService[User] {
+
   override def retrieve(loginInfo: LoginInfo): Future[Option[User]] = userService.getUser(loginInfo).invoke()
   def retrieveByEmail(email:String): Future[Option[User]] = userService.getUserByEmail(email).invoke()
   def save(user: User): Future[Option[User]] = userService.createUser.invoke(user)

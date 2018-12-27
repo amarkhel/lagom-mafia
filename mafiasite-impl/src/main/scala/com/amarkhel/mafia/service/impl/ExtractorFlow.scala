@@ -3,8 +3,8 @@ package com.amarkhel.mafia.service.impl
 import java.time.LocalDate
 
 import akka.stream.Materializer
-import akka.stream.scaladsl.Sink._
 import akka.stream.scaladsl.{Sink, Source}
+import com.amarkhel.mafia.common.Day
 import com.amarkhel.mafia.common.Game._
 import com.amarkhel.mafia.service.impl.Util._
 import com.amarkhel.mafia.utils.TextUtils._
@@ -28,7 +28,7 @@ class ExtractorFlow(mafiaService:MafiaServiceBackend, session:CassandraSession, 
 
   def extractGames(countDays:Int = -1): List[Int]= {
     (for {
-      date <- loadLastDate
+      date <- Try{Util.loadLastDate(session)}
       handled <- handleMissed(date, countDays)
     } yield handled) match {
       case Failure(err) => {
@@ -51,32 +51,32 @@ class ExtractorFlow(mafiaService:MafiaServiceBackend, session:CassandraSession, 
     } else false //data._2 == Location.SUMRAK.name
   }
 
-  private def handleMissed(res: Future[(Int, Int, Int)], countDays:Int) = Try{
-    val (year, month, day) = call(res)
-    val date = LocalDate.of(year, month, day)
+  private def handleMissed(f:Future[Day], countDays:Int) = Try {
+    val last = call(f)
+    val date = LocalDate.of(last.year, last.month, last.day)
     val count = (countDays > -1)? countDays | diffInDaysFromNow(date)
     handleDays(count, date)
-  }
-
-  private def loadLastDate = {
-    Try(session.select("SELECT year, month, day FROM extractedDays WHERE id = 1")
-      .map(row => {
-        def int(name:String) = row.getInt(name)
-        (int("year"), int("month"), int("day"))
-      }).runWith(last))
   }
 
   private def parseDay(day:Int, startDate:LocalDate) = {
     measure{
       val date = startDate.plusDays(day)
-      log.info(s"Extracting games from ${date.getYear}\\${date.getMonthValue}\\${date.getDayOfMonth}")
-      val list = Source(filterGames(date))
-        .mapAsyncUnordered(PARALLELISM)( mafiaService.loadGame(_, -1))
-        .mapAsyncUnordered(PARALLELISM)(game => entity.ask(FinishGame(game)))
-        .runWith(Sink.fold(List.empty[Int])((a, b) => b :: a))
-      val result = await(list)
-      await(entity.ask(CompleteDay(date)))
-      result
+      await(entity.ask(GetStatusCommand).map {
+        day =>
+          if (day.isBeforeOrEqual(date)) {
+            log.info(s"Extracting games from ${date.getYear}\\${date.getMonthValue}\\${date.getDayOfMonth}")
+            val list = Source(filterGames(date))
+              .mapAsyncUnordered(PARALLELISM)( mafiaService.loadGame(_, -1))
+              .mapAsyncUnordered(PARALLELISM)(game => entity.ask(FinishGame(game)))
+              .runWith(Sink.fold(List.empty[Int])((a, b) => b :: a))
+            val result = await(list)
+            await(entity.ask(CompleteDay(date)))
+            result
+          } else {
+            println(s"This day is already handled $day")
+            List.empty[Int]
+          }
+      })
     }("Day was handled by: ")
   }
 

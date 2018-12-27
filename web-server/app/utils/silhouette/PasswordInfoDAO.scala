@@ -13,8 +13,7 @@ import com.amarkhel.user.api.UserService
 
 class PasswordInfoDAO @Inject() (userService:UserService) extends DelegableAuthInfoDAO[PasswordInfo] {
 
-  def add(loginInfo: LoginInfo, authInfo: PasswordInfo): Future[PasswordInfo] =
-    update(loginInfo, authInfo)
+  def add(loginInfo: LoginInfo, authInfo: PasswordInfo): Future[PasswordInfo] = update(loginInfo, authInfo)
 
   def find(loginInfo: LoginInfo): Future[Option[PasswordInfo]] =
     userService.getUser(loginInfo).invoke().map {
@@ -38,5 +37,4 @@ class PasswordInfoDAO @Inject() (userService:UserService) extends DelegableAuthI
       }
       case _ => throw new Exception("PasswordInfoDAO - update : the user must exists to update its password")
     }
-
 }

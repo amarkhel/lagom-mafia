@@ -1,0 +1,59 @@
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.user.api.User
+@import controllers.routes
+@(list: Seq[Tournament], loggedUser:Option[User])(implicit request:RequestHeader, messages: Messages)
+
+@views.html.layout.logged(title = "Список турниров")(loggedUser) {
+    @tags.alertFromRequest(request, "error")
+    <center><h1 style="padding-bottom:10px;" class="text-primary">@Messages("tournament.list")</h1></center>
+    @list.map { tour =>
+        <div class="row" style="padding-bottom:10px;">
+            <div class="card border-primary w-100">
+                <div class="card-header">
+                    <span class="float-left"><b style="color:green">@tour.name</b></span>
+                    <span class="float-right">
+                        <a href="@routes.TournamentController.edit(tour.name)">
+                            <img src="https://img.icons8.com/color/48/000000/edit.png">
+                        </a>
+                        <a href="@routes.TournamentController.delete(tour.name)">
+                            <img src="https://img.icons8.com/color/48/000000/delete-sign.png">
+                        </a>
+                    </span>
+                </div>
+                <div class="card-body text-primary">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <center>
+                                Участников - <b style="color:green">@tour.countPlayers</b>
+                                Максимальное время на игру - <b style="color:green">@tour.gameExpirationTime ч.</b>
+                                Создатель - <b style="color:green">@tour.creator </b>
+                            </center>
+                        </li>
+                    </ul>
+                    <div class="row">
+                    @tour.games.map { game =>
+                        <div class="col-sm-6" style="padding:10px;">
+                            <div class="card border-danger">
+                                <div class="card-header">
+                                    Игра №
+                                    <a target="_blank" href="http://mafiaonline.ru/log/@game.id">
+                                        <b style="color:red">@game.id</b>
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush ">
+                                        <li class="list-group-item"><b style="color:green">@game.location</b></li>
+                                        <li class="list-group-item">Игроков - <b style="color:green">@game.countPlayers</b></li>
+                                        <li class="list-group-item">Раундов - <b style="color:green">@game.countRounds</b></li>
+                                        <li class="list-group-item">Мафия - <b style="color:red">@game.mafias.mkString(",")</b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

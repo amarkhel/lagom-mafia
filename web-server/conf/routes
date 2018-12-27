@@ -1,33 +1,29 @@
 
-GET         /                   controllers.Application.index
+GET     /                             controllers.Application.index
 
-GET         /index               controllers.ChatController.index
-GET         /game                controllers.ChatController.game
-GET         /chat/ws/:username   controllers.ChatController.chat(username: String)
+GET     /index                        controllers.GameController.index
+GET     /game                         controllers.GameController.game
+GET     /chat/ws/:username            controllers.GameController.chat(username: String)
 
-GET         /assets/*file               controllers.Assets.at(path = "/public", file)
+GET     /newTournament                controllers.TournamentController.index
+POST    /createTournament             controllers.TournamentController.create
+GET     /listOfTournaments            controllers.TournamentController.list
+GET     /deleteTournament/:name       controllers.TournamentController.delete(name:String)
+GET     /editTournament/:name         controllers.TournamentController.edit(name:String)
 
 # Authentication pages
-GET		/signup									controllers.Auth.startSignUp
-POST	/signup									controllers.Auth.handleStartSignUp
+GET		/signup							controllers.Auth.startSignUp
+POST	/signup							controllers.Auth.handleStartSignUp
 GET		/signup/:token					controllers.Auth.signUp(token: String)
-GET		/signin									controllers.Auth.signIn
-POST	/authenticate						controllers.Auth.authenticate
-GET		/signout								controllers.Auth.signOut
+GET		/signin							controllers.Auth.signIn
+POST	/authenticate					controllers.Auth.authenticate
+GET		/signout						controllers.Auth.signOut
 GET		/reset-password					controllers.Auth.forgotPassword
 POST	/reset-password					controllers.Auth.handleForgotPassword
-GET		/reset-password/:token	controllers.Auth.resetPassword(token: String)
-POST	/reset-password/:token	controllers.Auth.handleResetPassword(token: String)
+GET		/reset-password/:token	        controllers.Auth.resetPassword(token: String)
+POST	/reset-password/:token	        controllers.Auth.handleResetPassword(token: String)
 GET		/change-password				controllers.Auth.changePassword
 POST	/change-password				controllers.Auth.handleChangePassword
 
 # Map static resources from the /public folder to the /assets URL path
-GET		/public/*file						controllers.MyAssets.public(path="/public", file: Asset)
-GET		/lib/*file							controllers.MyAssets.lib(path="/public/lib", file: Asset)
-GET		/css/*file							controllers.MyAssets.css(path="/public/stylesheets", file: Asset)
-GET		/js/*file								controllers.MyAssets.js(path="/public/javascripts", file: Asset)
-GET		/img/*file							controllers.MyAssets.img(path="/public/images", file: Asset)
-GET		/com.amarkhel.mafia.common/css/*file				controllers.MyAssets.commonCss(path="/public/lib/com.amarkhel.mafia.common/stylesheets", file: Asset)
-GET		/com.amarkhel.mafia.common/js/*file				controllers.MyAssets.commonJs(path="/public/lib/com.amarkhel.mafia.common/javascripts", file: Asset)
-GET		/com.amarkhel.mafia.common/img/*file				controllers.MyAssets.commonImg(path="/public/lib/com.amarkhel.mafia.common/images", file: Asset)
-
+GET		/resource/*file					controllers.MyAssets.resource(path="/public", file: Asset)

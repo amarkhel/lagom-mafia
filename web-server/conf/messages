@@ -6,11 +6,18 @@ field.email=Email
 field.password=Пароль
 field.gameId=Номер партии
 
+createTournament=Сохранить турнир
+field.games = Номера партий
+field.tournamentName=Название турнира
+field.tournamentCount=Количество участников
+field.expirationTime=Максимальное время на партию
+tournament.list=Список турниров
+
 loadGame=Загрузить игру
 index.title=Сайт У
 index.intro.logged=Вы залогинены как <span class="text-success">{0}</span>, <a href="{2}">выйти</a>.
 index.intro.notlogged=Пожалуйста <a href="{0}">войдите на сайт </a> или <a href="{1}">зарегистрируйтесь</a>.<br>\
-Если не помните пароль, то <a href="{2}">можно сбросить пароль</a> (придет на почту).
+Если не помните пароль, то <a href="{2}">его можно сбросить</a> (придет на почту).
 
 signup=Зарегистрироваться
 signup.title=Создать аккаунт

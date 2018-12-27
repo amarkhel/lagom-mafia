@@ -1,0 +1,5 @@
+@import com.amarkhel.user.api.User
+@(body: Html)(implicit loggedUser: Option[User])
+@if(utils.silhouette.AdminAction.isAuthorized(loggedUser.get)) {
+@body
+}

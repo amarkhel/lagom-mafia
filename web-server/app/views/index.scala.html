@@ -1,19 +1,15 @@
 @import com.amarkhel.user.api.User
+@import controllers.routes
 @()(implicit loggedUser: Option[User], messages: Messages)
 
-@import controllers.routes
+@views.html.layout.notLogged(title = "Главная")(loggedUser) {
+    <center><h1 class="text-primary">@Messages("index.title")</h1>
 
-@views.html.templates.default(title = "Главная", loggedUser, tab = "index") {
-		
-		<h1 class="text-primary">@Messages("index.title")</h1>
-		
-		<p class="lead">
-			@loggedUser.map { user =>
-				@Html(Messages("index.intro.logged", user.name, routes.Application.index, routes.Auth.signOut))
-			<a href="@routes.ChatController.index">@Messages("loadGame")</a>
-			}.getOrElse {
-				@Html(Messages("index.intro.notlogged", routes.Auth.signIn, routes.Auth.startSignUp, routes.Auth.forgotPassword))
-			}
-		</p>
-	}
-	
+    <p class="lead">
+        @loggedUser.map { user =>
+            <script>window.location.href = 'index';</script>
+        }.getOrElse {
+            @Html(Messages("index.intro.notlogged", routes.Auth.signIn, routes.Auth.startSignUp, routes.Auth.forgotPassword))
+        }
+    </p></center>
+}

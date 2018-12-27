@@ -1,0 +1,7 @@
+@import com.amarkhel.user.api.User
+@(body: Html)(orElseBody: Html)(implicit loggedUser: Option[User])
+@if(utils.silhouette.AdminAction.isAuthorized(loggedUser.get)) {
+@body
+} else {
+@orElseBody
+}

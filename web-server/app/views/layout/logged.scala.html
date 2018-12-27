@@ -1,0 +1,67 @@
+@import com.amarkhel.user.api.User
+@import controllers.routes
+@(title: String, styles: Html = Html(""), scripts: Html = Html(""), modals: Html = Html(""))(loggedUser: Option[User])(content: Html)(implicit request: RequestHeader, messages: Messages)
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>@title</title>
+	<link href="@routes.MyAssets.resource("css/bootstrap.min.css")" rel="stylesheet">
+	<link href="@routes.MyAssets.resource("css/sb-admin.css")" rel="stylesheet">
+	<link href="@routes.MyAssets.resource("css/plugins/morris.css")" rel="stylesheet">
+	<link href="@routes.MyAssets.resource("/fonts/css/font-awesome.min.css")" rel="stylesheet" type="text/css">
+	<link rel='stylesheet' href='@routes.MyAssets.resource("css/main.css")'>
+	@styles
+	<script src="@routes.MyAssets.resource("scripts/jquery.js")"></script>
+    <script src="@routes.MyAssets.resource("scripts/bootstrap.min.js")"></script>
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+	<script src="https://code.highcharts.com/highcharts-3d.js"></script>
+	<script src="https://code.highcharts.com/modules/exporting.js"></script>
+	<script src="@routes.MyAssets.resource("scripts/main.js")"></script>
+    @scripts
+</head>
+<body>
+	<div id="wrapper">
+		<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+			<div class="navbar-header">
+				<a class="navbar-brand" href="@routes.Application.index">Собственность клана Упийцы</a>
+			</div>
+			<ul class="nav navbar-top-links navbar-right">
+                <li class="dropdown">
+                    <a id="profile" class="dropdown-toggle" data-toggle="dropdown" href="#">
+                        <i class="fa fa-user fa-fw"></i>@Html(Messages("topbar.hello")) @loggedUser.get.name<i class="fa fa-caret-down"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-user">
+                        <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
+                        </li>
+                        <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
+                        </li>
+                        <li class="divider"></li>
+                        <li><a href="@routes.Auth.signOut"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+			<div class="collapse navbar-collapse navbar-ex1-collapse">
+				<ul class="nav navbar-nav side-nav">
+				@isAdmin{
+					<li class="active">
+						<a id="game" href="@routes.GameController.index"><i class="fa fa-fw fa-dashboard"></i>Просмотреть игру</a>
+					</li>}(loggedUser)
+					<li>
+						<a id="tournamentsList" href="@routes.TournamentController.list"><i class="fa fa-fw fa-dashboard"></i>Список турниров</a>
+					</li>
+					<li>
+						<a id="tournamentCreate" href="@routes.TournamentController.index"><i class="fa fa-fw fa-dashboard"></i>Создать турнир</a>
+					</li>
+				</ul>
+			</div>
+
+		</nav>
+		<div id="page-wrapper">
+			@content
+		</div>
+	</div>
+</body>
+</html>

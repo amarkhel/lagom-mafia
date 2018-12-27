@@ -1,13 +1,13 @@
 package utils
 
-import play.api.Play.current
 import akka.actor.ActorSystem
+import javax.inject.{Inject, Singleton}
+import net.ceedubs.ficus.Ficus._
+import play.api.Configuration
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.mailer._
-import play.api.Configuration
+
 import scala.concurrent.duration._
-import net.ceedubs.ficus.Ficus._
-import javax.inject.{ Singleton, Inject }
 
 @Singleton
 class MailService @Inject() (mailerClient: MailerClient, system: ActorSystem, conf: Configuration) {

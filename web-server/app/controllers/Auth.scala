@@ -1,38 +1,36 @@
 package controllers
 
-import models._
-import utils.silhouette._
-import utils.silhouette.Implicits._
+import com.amarkhel.token.api.TokenService
+import com.amarkhel.user.api.User
+import com.mohiva.play.silhouette.api.Authenticator.Implicits._
 import com.mohiva.play.silhouette.api._
+import com.mohiva.play.silhouette.api.actions.{SecuredRequest, UserAwareRequest}
+import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.util.{Clock, Credentials, PasswordHasherRegistry}
-import com.mohiva.play.silhouette.api.exceptions.ProviderException
-import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import com.mohiva.play.silhouette.impl.authenticators.CookieAuthenticator
-import com.mohiva.play.silhouette.impl.exceptions.{IdentityNotFoundException, InvalidPasswordException}
-import com.mohiva.play.silhouette.api.Authenticator.Implicits._
-import com.mohiva.play.silhouette.api.actions.{SecuredRequest, UserAwareAction, UserAwareRequest}
+import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
+import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
+import javax.inject.{Inject, Singleton}
+import net.ceedubs.ficus.Ficus._
+import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
+import play.api.mvc.{AbstractController, ControllerComponents, RequestHeader}
 import utils.Mailer
-
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.concurrent.duration._
-import net.ceedubs.ficus.Ficus._
-import javax.inject.{Inject, Singleton}
-
-import com.amarkhel.user.api.User
-import com.amarkhel.token.api.TokenService
-import play.api.Configuration
-import play.api.mvc.{AbstractController, ControllerComponents, MessagesControllerComponents, RequestHeader}
+import utils.silhouette.Implicits._
+import utils.silhouette._
 import views.html.{auth => viewsAuth}
+
+import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 @Singleton
 class Auth @Inject() (
-    val cc: ControllerComponents,
+    cc: ControllerComponents,
     silhouette: Silhouette[MyEnv],
     messagesApi: MessagesApi,
     userService: UserFacade,
@@ -43,17 +41,7 @@ class Auth @Inject() (
     mailer: Mailer,
     conf: Configuration,
     clock: Clock
-) extends AbstractController(cc) with I18nSupport{
-
-  def env: Environment[MyEnv] = silhouette.env
-
-  def SecuredAction = silhouette.SecuredAction
-  def UnsecuredAction = silhouette.UnsecuredAction
-  def UserAwareAction = silhouette.UserAwareAction
-
-  implicit def securedRequest2User[A](implicit request: SecuredRequest[MyEnv, A]): User = request.identity
-  implicit def userAwareRequest2UserOpt[A](implicit request: UserAwareRequest[MyEnv, A]): Option[User] = request.identity
-  // UTILITIES
+) extends BaseController(silhouette, messagesApi, cc) with I18nSupport{
 
   val passwordValidation = nonEmptyText(minLength = 6)
   def notFoundDefault(implicit request: RequestHeader) = Future.successful(NotFound(views.html.errors.notFound(request)))
@@ -130,10 +118,10 @@ class Auth @Inject() (
               }
             }
           }
-          case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
+          case None => Future.failed(new IdentityNotFoundException("Пользователь с таким именем не найден"))
         }
       }
-      case Some(token) => {
+      case Some(_) => {
         tokenService.expireToken(tokenId)
         notFoundDefault
       }
@@ -155,7 +143,7 @@ class Auth @Inject() (
    */
   def signIn = UserAwareAction { implicit request =>
     request.identity match {
-      case Some(user) => Redirect(routes.Application.index)
+      case Some(_) => Redirect(routes.Application.index)
       case None => Ok(viewsAuth.signIn(signInForm))
     }
   }
@@ -180,7 +168,7 @@ class Auth @Inject() (
               env.eventBus.publish(LoginEvent(user, request))
               result
             }
-            case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
+            case None => Future.failed(new IdentityNotFoundException("Пользователь с таким именем не найден"))
           }
         }.recover {
           case e: ProviderException => Redirect(routes.Auth.signIn).flashing("error" -> Messages("auth.credentials.incorrect"))
@@ -196,12 +184,11 @@ class Auth @Inject() (
         idleTimeout = rememberMeParams._2,
         cookieMaxAge = rememberMeParams._3
       )
-    } else
-      authenticator
+    } else authenticator
   }
 
   private lazy val rememberMeParams: (FiniteDuration, Option[FiniteDuration], Option[FiniteDuration]) = {
-    val cfg = conf.getConfig("silhouette.authenticator.rememberMe").get.underlying
+    val cfg = conf.get[Configuration]("silhouette.authenticator.rememberMe").underlying
     (
       cfg.as[FiniteDuration]("authenticatorExpiry"),
       cfg.getAs[FiniteDuration]("authenticatorIdleTimeout"),
@@ -267,7 +254,7 @@ class Auth @Inject() (
       case Some(token) if (!token.isSignUp && !token.isExpired) => {
         Future.successful(Ok(viewsAuth.resetPassword(tokenId, resetPasswordForm)))
       }
-      case Some(token) => {
+      case Some(_) => {
         tokenService.expireToken(tokenId)
         notFoundDefault
       }
@@ -296,10 +283,10 @@ class Auth @Inject() (
                   result
                 }
               }
-              case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
+              case None => Future.failed(new IdentityNotFoundException("Пользователь не найден"))
             }
           }
-          case Some(token) => {
+          case Some(_) => {
             tokenService.expireToken(tokenId)
             notFoundDefault
           }
@@ -344,6 +331,4 @@ class Auth @Inject() (
       }
     )
   }
-
-
 }

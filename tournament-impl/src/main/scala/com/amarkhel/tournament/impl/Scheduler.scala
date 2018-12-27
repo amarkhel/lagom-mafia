@@ -21,13 +21,8 @@ class Scheduler(system: ActorSystem, registry: PersistentEntityRegistry, tournam
     tournamentService.getTournaments.invoke().map{
       tournaments => {
         for {
-          tournament <- tournaments if(tournament.expired)
-        } yield (tournamentService.finishTournament(tournament.name))
-        for {
-          t <- tournaments if(t.inProgress)
-          player <- t.players
-          game = player.findStartedGame.get if(game.expired)
-        } yield tournamentService.expireGame(t.name, player.name)
+          t <- tournaments if t.inProgress && t.gameInProgress.get.expired
+        } yield tournamentService.finishGame(t.name, t.gameInProgress.get.id)
       }
     }
     log.warn("Stop tournament scheduler")

@@ -1,6 +1,7 @@
 package com.amarkhel.mafia.service.impl
 
 import akka.Done
+import akka.stream.Materializer
 import com.amarkhel.mafia.common.Day
 import com.datastax.driver.core.{BoundStatement, PreparedStatement}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, CassandraSession}
@@ -8,7 +9,7 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, ReadSidePro
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SchedulerProcessor(readSide: CassandraReadSide, session: CassandraSession)(implicit ec: ExecutionContext)
+class SchedulerProcessor(readSide: CassandraReadSide, session: CassandraSession)(implicit mat:Materializer, ec: ExecutionContext)
   extends ReadSideProcessor[ExtractorEvent] {
 
   private var insertStatement: PreparedStatement = _
@@ -43,11 +44,13 @@ class SchedulerProcessor(readSide: CassandraReadSide, session: CassandraSession)
       insert <- session.prepare("INSERT INTO extractedDays(id, year, month, day) VALUES (1, ?, ?, ?)")
       update <- session.prepare("UPDATE extractedDays SET year=?, month=?, day=? where id = 1")
       delete <- session.prepare("DELETE FROM extractedDays where id = 1")
+      lastDate <- Util.loadLastDate(session)
     } yield {
       insertStatement = insert
       deleteStatement = delete
       updateStatement = update
-      session.executeWrite(bind(insertStatement, ExtractorEntity.firstDay))
+
+      session.executeWrite(bind(insertStatement, lastDate))
       Done
     }
   }
@@ -55,7 +58,7 @@ class SchedulerProcessor(readSide: CassandraReadSide, session: CassandraSession)
   private def clearAll(clear: EventStreamElement[_]) = {
     list2future(
       deleteStatement.bind(),
-      bind(insertStatement, ExtractorEntity.firstDay)
+      bind(insertStatement, Util.firstDay)
     )
   }
 

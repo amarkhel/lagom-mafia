@@ -1,13 +1,32 @@
 package com.amarkhel.tournament.impl
 
-import java.time.LocalDateTime
-
 import com.amarkhel.mafia.utils.JsonFormats.singletonFormat
 import com.amarkhel.tournament.api._
-import com.lightbend.lagom.scaladsl.persistence.PersistentEntity
+import com.amarkhel.tournament.impl.TournamentEntity._
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
+import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, AggregateEventTagger, PersistentEntity}
 import com.lightbend.lagom.scaladsl.playjson.{JsonSerializer, JsonSerializerRegistry}
 import play.api.libs.json.{Format, Json}
+
+object TournamentEntity {
+  val TOURNAMENT_NOT_FOUND = "Турнира с таким именем не существует"
+  val TOURNAMENT_FINISHED = "Турнир уже закончился"
+  val TOURNAMENT_NOT_STARTED = "Турнир еще не начался"
+  val SOMETHING_WRONG = "Произошло что-то непредвиденное, попробуйте зайти позже"
+  val TOURNAMENT_ALREADY_STARTED = "Турнир уже начался"
+  val ALL_PEOPLE_JOINED = "Все люди уже набраны на этот турнир"
+  val ALREADY_JOINED = "Вы уже добавлены к этому турниру"
+  val GAME_IN_PROGRESS = "Текущая игра уже выбрана"
+  val NO_CURRENT_GAME = "Нету текущей игры"
+  val BLANK_NAME = "Невозможно добавить пользователя без имени"
+  val GAME_NOT_FOUND = "Игра с таким айди не найдена"
+  val GAME_WAS_STARTED = "Эта игра уже стартовала"
+  val ANOTHER_GAME_IN_PROGRESS = "Нельзя остановить игру, пока другая находится в прогрессе"
+  val PLAYER_NOT_JOINED_TO_TOURNAMENT = "Вы не участник турнира"
+  val ALREADY_VOTED_FOR_THIS_PLAYER = "Вы уже проголосовали за этого игрока"
+  val ALL_MAFIA_CHOSEN = "Вы уже выбрали всех мафиози"
+  val LAST_ROUND_ALREADY_CHOSEN = "Последний раунд уже выбран"
+}
 
 class TournamentEntity extends PersistentEntity {
   override type Command = TournamentCommand
@@ -15,285 +34,257 @@ class TournamentEntity extends PersistentEntity {
   override type State = Option[Tournament]
   override def initialState = None
 
+  val notExistBehavior = Actions().onCommand[CreateTournament, Tournament] {
+    case (CreateTournament(tournament), ctx, _) => ctx.thenPersist(TournamentCreated(tournament))(_ => ctx.reply(tournament))
+  }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
+    case (GetTournament, ctx, _) => ctx.reply(None)
+  }.onReadOnlyCommand[DeleteTournament.type, Boolean] {
+    case (DeleteTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[UpdateTournament, Tournament] {
+    case (UpdateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[StartGame, Boolean] {
+    case (StartGame(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[FinishGame, Boolean] {
+    case (FinishGame(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[NextRound, Boolean] {
+    case (NextRound(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[Choose, Boolean] {
+    case (Choose(_, _), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[StartTournament.type, Boolean] {
+    case (StartTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[FinishTournament.type, Boolean] {
+    case (FinishTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[JoinTournament, Boolean] {
+    case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onEvent {
+    case (TournamentCreated(tournament), _) => Some(tournament)
+  }
+
+  val notStartedBehavior = Actions().onCommand[DeleteTournament.type, Boolean] {
+    case (DeleteTournament, ctx, _) => ctx.thenPersist(TournamentDeleted)(_ => ctx.reply(true))
+  }.onCommand[UpdateTournament, Tournament] {
+    case (UpdateTournament(tournament), ctx, _) => ctx.thenPersist(TournamentUpdated(tournament))(_ => ctx.reply(tournament))
+  }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
+    case (GetTournament, ctx, t) => ctx.reply(Some(t.get))
+  }.onReadOnlyCommand[FinishTournament.type, Boolean] {
+    case (FinishTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_STARTED)
+  }.onCommand[StartTournament.type, Boolean] {
+    case (StartTournament, ctx, _) => ctx.thenPersist(TournamentStarted)(_ => ctx.reply(true))
+  }.onReadOnlyCommand[CreateTournament, Tournament] {
+    case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[StartGame, Boolean] {
+    case (StartGame(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_STARTED)
+  }.onReadOnlyCommand[NextRound, Boolean] {
+    case (NextRound(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_STARTED)
+  }.onReadOnlyCommand[FinishGame, Boolean] {
+    case (FinishGame(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_STARTED)
+  }.onReadOnlyCommand[Choose, Boolean] {
+    case (Choose(_, _), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_STARTED)
+  }.onCommand[JoinTournament, Boolean] {
+    case (JoinTournament(user), ctx, tournament) => {
+      val t = tournament.get
+      if(user == null || user.isEmpty) {
+        ctx.invalidCommand(BLANK_NAME)
+        ctx.done
+      } else if (t.allPlayersJoined) {
+        ctx.invalidCommand(ALL_PEOPLE_JOINED)
+        ctx.done
+      } else if (t.havePlayer(user)) {
+        ctx.invalidCommand(ALREADY_JOINED)
+        ctx.done
+      } else {
+        ctx.thenPersist(Joined(user))(_ => ctx.reply(true))
+      }
+    }
+  }.onEvent {
+    case (TournamentDeleted, _) => None
+    case (Joined(name), t) => Some(t.get.join(name))
+    case (TournamentStarted, t) => Some(t.get.startTournament)
+    case (TournamentUpdated(tournament), _) => Some(tournament)
+  }
+
+  val gameInProgressBehavior = Actions().onReadOnlyCommand[DeleteTournament.type, Boolean] {
+    case (DeleteTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
+    case (GetTournament, ctx, t) => ctx.reply(Some(t.get))
+  }.onReadOnlyCommand[FinishTournament.type, Boolean] {
+    case (FinishTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[StartTournament.type, Boolean] {
+    case (StartTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[StartGame, Boolean] {
+    case (StartGame(_), ctx, _) => ctx.invalidCommand(GAME_IN_PROGRESS)
+  }.onCommand[Choose, Boolean] {
+    case (Choose(user, pl), ctx, tournament) => {
+      val t = tournament.get
+      if(!t.havePlayer(user)){
+        ctx.invalidCommand(PLAYER_NOT_JOINED_TO_TOURNAMENT)
+        ctx.done
+      } else if(t.alreadyVoted(user, pl)){
+        ctx.invalidCommand(ALREADY_VOTED_FOR_THIS_PLAYER)
+        ctx.done
+      } else if(t.isGameFinishedForUser(user)){
+        ctx.invalidCommand(ALL_MAFIA_CHOSEN)
+        ctx.done
+      } else ctx.thenPersist(Chosen(user, pl, t.inProgressGameId))(_ => ctx.reply(true))
+    }
+  }.onCommand[NextRound, Boolean] {
+    case (NextRound(user), ctx, tournament) => {
+      val t = tournament.get
+      if(!t.havePlayer(user)){
+        ctx.invalidCommand(PLAYER_NOT_JOINED_TO_TOURNAMENT)
+        ctx.done
+      } else if(t.isGameFinishedForUser(user)) {
+        ctx.invalidCommand(LAST_ROUND_ALREADY_CHOSEN)
+        ctx.done
+      }
+      else ctx.thenPersist(NextRoundStarted(user, t.inProgressGameId))(_ => ctx.reply(true))
+    }
+  }.onCommand[FinishGame, Boolean] {
+    case (FinishGame(id), ctx, t) => {
+      if(t.get.inProgressGameId != id) {
+        ctx.invalidCommand(ANOTHER_GAME_IN_PROGRESS)
+        ctx.done
+      } else {
+        ctx.thenPersist(GameFinished(id))(_ => ctx.reply(true))
+      }
+    }
+  }.onReadOnlyCommand[JoinTournament, Boolean] {
+    case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[CreateTournament, Tournament] {
+    case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[UpdateTournament, Tournament] {
+    case (UpdateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onEvent {
+    case (Chosen(pl, maf, id), t) => Some(t.get.chooseMafia(pl, maf, id))
+    case (NextRoundStarted(pl, id), t) => Some(t.get.nextRound(pl, id))
+    case (GameFinished(id), t) => Some(t.get.finishGame(id))
+    case (TournamentFinished, t) => Some(t.get.finishTournament)
+  }
+
+  val betweenGamesBehavior = Actions().onReadOnlyCommand[DeleteTournament.type, Boolean] {
+    case (DeleteTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
+    case (GetTournament, ctx, t) => ctx.reply(Some(t.get))
+  }.onCommand[FinishTournament.type, Boolean] {
+    case (FinishTournament, ctx, _) => ctx.thenPersist(TournamentFinished)(_ => ctx.reply(true))
+  }.onReadOnlyCommand[StartTournament.type, Boolean] {
+    case (StartTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onCommand[StartGame, Boolean] {
+    case (StartGame(id), ctx, t) => {
+      if(!t.get.gameExist(id)) {
+        ctx.invalidCommand(GAME_NOT_FOUND)
+        ctx.done
+      } else if (t.get.wasStarted(id)) {
+        ctx.invalidCommand(GAME_WAS_STARTED)
+        ctx.done
+      }
+      else ctx.thenPersist(GameStarted(id))(_ => ctx.reply(true))
+    }
+  }.onReadOnlyCommand[Choose, Boolean] {
+    case (Choose(_, _), ctx, _) => ctx.invalidCommand(NO_CURRENT_GAME)
+  }.onReadOnlyCommand[NextRound, Boolean] {
+    case (NextRound(_), ctx, _) => ctx.invalidCommand(NO_CURRENT_GAME)
+  }.onReadOnlyCommand[FinishGame, Boolean] {
+    case (FinishGame(_), ctx, _) => ctx.invalidCommand(NO_CURRENT_GAME)
+  }.onReadOnlyCommand[JoinTournament, Boolean] {
+    case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[CreateTournament, Tournament] {
+    case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[UpdateTournament, Tournament] {
+    case (UpdateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onEvent {
+    case (TournamentFinished, t) => Some(t.get.finishTournament)
+    case (GameStarted(id), t) => Some(t.get.startGame(id))
+  }
+
+  val alreadyFinishedBehavior = Actions().onReadOnlyCommand[DeleteTournament.type, Boolean] {
+    case (DeleteTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
+    case (GetTournament, ctx, t) => ctx.reply(Some(t.get))
+  }.onReadOnlyCommand[FinishTournament.type, Boolean] {
+    case (FinishTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[StartTournament.type, Boolean] {
+    case (StartTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[CreateTournament, Tournament] {
+    case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[UpdateTournament, Tournament] {
+    case (UpdateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[StartGame, Boolean] {
+    case (StartGame(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[FinishGame, Boolean] {
+    case (FinishGame(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[NextRound, Boolean] {
+    case (NextRound(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[Choose, Boolean] {
+    case (Choose(_, _), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[JoinTournament, Boolean] {
+    case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }
+
   override def behavior: Behavior = {
-    case None => {
-      Actions().onCommand[CreateTournament, Tournament] {
-        case (CreateTournament(tournament), ctx, _) =>
-          ctx.thenPersist(TournamentCreated(tournament))(_ => ctx.reply(tournament))
-      }.onReadOnlyCommand[DeleteTournament.type, Boolean] {
-        case (DeleteTournament, ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[StartGame, Boolean] {
-        case (StartGame(_, _), ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[ExpireGame, Boolean] {
-        case (ExpireGame(_), ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[NextRound, Boolean] {
-        case (NextRound(_), ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[Choose, Boolean] {
-        case (Choose(_, _), ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
-        case (GetTournament, ctx, _) => ctx.reply(None)
-      }.onReadOnlyCommand[StartTournament.type, Boolean] {
-        case (StartTournament, ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[FinishTournament.type, Boolean] {
-        case (FinishTournament, ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onReadOnlyCommand[JoinTournament, Boolean] {
-        case (JoinTournament(_), ctx, _) => ctx.invalidCommand("Tournament not exists")
-      }.onEvent {
-        case (TournamentCreated(tournament), _) => Some(tournament)
-      }
-    }
-    case Some(t) if (t.finished) => {
-      Actions().onReadOnlyCommand[DeleteTournament.type, Boolean] {
-        case (DeleteTournament, ctx, _) => ctx.invalidCommand("Tournament already finished and cannot be deleted")
-      }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
-        case (GetTournament, ctx, _) => ctx.reply(Some(t))
-      }.onReadOnlyCommand[FinishTournament.type, Boolean] {
-        case (FinishTournament, ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[StartTournament.type, Boolean] {
-        case (StartTournament, ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[CreateTournament, Tournament] {
-        case (CreateTournament(_), ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[StartGame, Boolean] {
-        case (StartGame(_, _), ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[NextRound, Boolean] {
-        case (NextRound(_), ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[ExpireGame, Boolean] {
-        case (ExpireGame(_), ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[Choose, Boolean] {
-        case (Choose(_, _), ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }.onReadOnlyCommand[JoinTournament, Boolean] {
-        case (JoinTournament(_), ctx, _) => ctx.invalidCommand("Tournament already finished")
-      }
-    }
-    case Some(t) => {
-      Actions().onCommand[DeleteTournament.type, Boolean] {
-        case (DeleteTournament, ctx, _) =>
-          ctx.thenPersist(TournamentDeleted)(_ => ctx.reply(true))
-      }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
-        case (GetTournament, ctx, _) => ctx.reply(Some(t))
-      }.onCommand[FinishTournament.type, Boolean] {
-        case (FinishTournament, ctx, tournament) => {
-          val players =  for {
-            pl <- tournament.get.players
-            games = for {
-              game <- pl.games
-              modified = game.expire
-            }
-            yield(modified)
-            p = pl.copy(games = games)
-          } yield p
-          val t = tournament.get.copy(players = players, finish = Some(LocalDateTime.now()))
-          ctx.thenPersist(TournamentFinished(t))(_ => ctx.reply(true))
-        }
-      }.onCommand[StartTournament.type, Boolean] {
-        case (StartTournament, ctx, tournament) => {
-          val t = tournament.get.copy(start = Some(LocalDateTime.now()))
-          ctx.thenPersist(TournamentStarted(t))(_ => ctx.reply(true))
-        }
-      }.onCommand[StartGame, Boolean] {
-        case (StartGame(user, id), ctx, tournament) => {
-          val result = for {
-            t <- tournament
-            player <- t.findPlayer(user)
-            game <- player.findGame(id) if(game.notStarted)
-            g = game.copy(started = Some(LocalDateTime.now()))
-            games = player.games.updated(player.games.indexOf(game), g)
-            p = player.copy(games = games)
-            players = t.players.updated(t.players.indexOf(player), p)
-            tour = t.copy(players = players)
-          } yield tour
-          if(result.isDefined){
-            ctx.thenPersist(GameStarted(result.get))(_ => ctx.reply(true))
-          } else {
-            ctx.invalidCommand("Something wrong happened")
-            ctx.done
-          }
-        }
-      }.onCommand[Choose, Boolean] {
-        case (Choose(user, pl), ctx, tournament) => {
-          val result = for {
-            t <- tournament
-            player <- t.findPlayer(user)
-            game <- player.findStartedGame
-            modified = game.choose(pl)
-            games = player.games.updated(player.games.indexOf(game), modified)
-            p = player.copy(games = games)
-            players = t.players.updated(t.players.indexOf(player), p)
-            tour = t.copy(players = players)
-          } yield tour
-          if(result.isDefined){
-            ctx.thenPersist(GameStarted(result.get))(_ => ctx.reply(true))
-          } else {
-            ctx.invalidCommand("Something wrong happened")
-            ctx.done
-          }
-        }
-      }.onCommand[NextRound, Boolean] {
-        case (NextRound(user), ctx, tournament) => {
-          val result = for {
-            t <- tournament
-            player <- t.findPlayer(user)
-            game <- player.findStartedGame
-            modified = game.nextRound
-            games = player.games.updated(player.games.indexOf(game), modified)
-            p = player.copy(games = games)
-            players = t.players.updated(t.players.indexOf(player), p)
-            tour = t.copy(players = players)
-          } yield tour
-          if(result.isDefined){
-            ctx.thenPersist(NextRoundStarted(result.get))(_ => ctx.reply(true))
-          } else {
-            ctx.invalidCommand("Something wrong happened")
-            ctx.done
-          }
-        }
-      }.onCommand[ExpireGame, Boolean] {
-        case (ExpireGame(user), ctx, tournament) => {
-          val result = for {
-            t <- tournament
-            player <- t.findPlayer(user)
-            game <- player.findStartedGame
-            modified = game.expire
-            games = player.games.updated(player.games.indexOf(game), modified)
-            p = player.copy(games = games)
-            players = t.players.updated(t.players.indexOf(player), p)
-            tour = t.copy(players = players)
-          } yield tour
-          if(result.isDefined){
-            ctx.thenPersist(NextRoundStarted(result.get))(_ => ctx.reply(true))
-          } else {
-            ctx.invalidCommand("Something wrong happened")
-            ctx.done
-          }
-        }
-      }.onCommand[JoinTournament, Boolean] {
-        case (JoinTournament(user), ctx, tournament) => {
-          if(tournament.get.countJoinedPlayers == tournament.get.countPlayers) {
-            ctx.invalidCommand("Все люди уже набраны на этот турнир")
-            ctx.done
-          } else {
-            val results = for {
-              descr <- tournament.get.games
-              solution = Solution(Map[String, Int](), SolutionStatus.AWAITING)
-              result = GameResult(descr.id, 0, descr, solution, None)
-            } yield result
-            val userState = UserState(user, results)
-            val modified = t.copy(players = tournament.get.players :+ userState)
-            ctx.thenPersist(Joined(modified))(_ => ctx.reply(true))
-          }
-        }
-      }.onReadOnlyCommand[CreateTournament, Tournament] {
-        case (CreateTournament(_), ctx, _) => ctx.invalidCommand("Tournament already exists")
-      }.onEvent {
-        case (TournamentDeleted, _) => None
-        case (TournamentFinished(tournament), _) => Some(tournament)
-        case (GameStarted(tournament), _) => Some(tournament)
-        case (NextRoundStarted(tournament), _) => Some(tournament)
-        case (TournamentStarted(tournament), _) => Some(tournament)
-      }
-    }
+    case None => notExistBehavior
+    case Some(t) if t.finished => alreadyFinishedBehavior
+    case Some(t) if !t.started => notStartedBehavior
+    case Some(t) if t.hasGameInProgress => gameInProgressBehavior
+    case Some(_) => betweenGamesBehavior
   }
 }
 
-sealed trait TournamentEvent
+trait TournamentEvent extends AggregateEvent[TournamentEvent] {
+  override def aggregateTag: AggregateEventTagger[TournamentEvent] = TournamentEvent.Tag
+}
+case object TournamentEvent{
+  val Tag = AggregateEventTag.sharded[TournamentEvent](5)
+  implicit val formatTC: Format[TournamentCreated] = Json.format
+  implicit val formatTU: Format[TournamentUpdated] = Json.format
+  implicit val formatTD: Format[TournamentDeleted.type] = singletonFormat(TournamentDeleted)
+  implicit val formatTF: Format[TournamentFinished.type] = singletonFormat(TournamentFinished)
+  implicit val formatTS: Format[TournamentStarted.type] = singletonFormat(TournamentStarted)
+  implicit val formatCH: Format[Chosen] = Json.format
+  implicit val formatGS: Format[GameStarted] = Json.format
+  implicit val formatGF: Format[GameFinished] = Json.format
+  implicit val formatJ: Format[Joined] = Json.format
+  implicit val formatNR: Format[NextRoundStarted] = Json.format
+}
 
 case class TournamentCreated(tournament:Tournament) extends TournamentEvent
-case class TournamentFinished(tournament:Tournament) extends TournamentEvent
-case class TournamentStarted(tournament:Tournament) extends TournamentEvent
-case class GameStarted(tournament:Tournament) extends TournamentEvent
-case class GameExpired(tournament:Tournament) extends TournamentEvent
-case class Joined(tournament:Tournament) extends TournamentEvent
-case class Chosen(tournament:Tournament) extends TournamentEvent
-case class NextRoundStarted(tournament:Tournament) extends TournamentEvent
-case object TournamentDeleted extends TournamentEvent{
-  implicit val format: Format[TournamentDeleted.type] = singletonFormat(TournamentDeleted)
-}
-
-object TournamentCreated {
-  implicit val format: Format[TournamentCreated] = Json.format
-}
-
-object TournamentFinished {
-  implicit val format: Format[TournamentFinished] = Json.format
-}
-
-object TournamentStarted {
-  implicit val format: Format[TournamentStarted] = Json.format
-}
-
-object Chosen {
-  implicit val format: Format[Chosen] = Json.format
-}
-
-object GameStarted {
-  implicit val format: Format[GameStarted] = Json.format
-}
-
-object GameExpired {
-  implicit val format: Format[GameExpired] = Json.format
-}
-
-object Joined {
-  implicit val format: Format[Joined] = Json.format
-}
-
-object NextRoundStarted {
-  implicit val format: Format[NextRoundStarted] = Json.format
-}
+case class TournamentUpdated(tournament:Tournament) extends TournamentEvent
+case object TournamentFinished extends TournamentEvent
+case object TournamentStarted extends TournamentEvent
+case object TournamentDeleted extends TournamentEvent
+case class GameStarted(id:Int) extends TournamentEvent
+case class GameFinished(id:Int) extends TournamentEvent
+case class Joined(player:String) extends TournamentEvent
+case class Chosen(player:String, target:String, game:Int) extends TournamentEvent
+case class NextRoundStarted(user:String, game:Int) extends TournamentEvent
 
 sealed trait TournamentCommand
 
+object TournamentCommand {
+  implicit val formatFT: Format[FinishTournament.type] = singletonFormat(FinishTournament)
+  implicit val formatDT: Format[DeleteTournament.type] = singletonFormat(DeleteTournament)
+  implicit val formatGT: Format[GetTournament.type] = singletonFormat(GetTournament)
+  implicit val formatST: Format[StartTournament.type] = singletonFormat(StartTournament)
+  implicit val formatUT: Format[UpdateTournament.type] = singletonFormat(UpdateTournament)
+  implicit val formatCT: Format[CreateTournament] = Json.format
+  implicit val formatCH: Format[Choose] = Json.format
+  implicit val formatSG: Format[StartGame] = Json.format
+  implicit val formatFG: Format[FinishGame] = Json.format
+  implicit val formatNR: Format[NextRound] = Json.format
+  implicit val formatJT: Format[JoinTournament] = Json.format
+}
+
 case class CreateTournament(tournament:Tournament) extends TournamentCommand with ReplyType[Tournament]
-
-case class StartGame(user:String, id:Int) extends TournamentCommand with ReplyType[Boolean]
-
+case class UpdateTournament(tournament:Tournament) extends TournamentCommand with ReplyType[Tournament]
+case class StartGame(id:Int) extends TournamentCommand with ReplyType[Boolean]
 case class NextRound(user:String) extends TournamentCommand with ReplyType[Boolean]
-
 case class Choose(user:String, player:String) extends TournamentCommand with ReplyType[Boolean]
-
-case class ExpireGame(user:String) extends TournamentCommand with ReplyType[Boolean]
-
+case class FinishGame(id:Int) extends TournamentCommand with ReplyType[Boolean]
 case class JoinTournament(user:String) extends TournamentCommand with ReplyType[Boolean]
-
-case object FinishTournament extends TournamentCommand with ReplyType[Boolean]{
-  implicit val format: Format[FinishTournament.type] = singletonFormat(FinishTournament)
-}
-
-case object DeleteTournament extends TournamentCommand with ReplyType[Boolean]{
-  implicit val format: Format[DeleteTournament.type] = singletonFormat(DeleteTournament)
-}
-
-case object GetTournament extends TournamentCommand with ReplyType[Option[Tournament]]{
-  implicit val format: Format[GetTournament.type] = singletonFormat(GetTournament)
-}
-
-case object StartTournament extends TournamentCommand with ReplyType[Boolean]{
-  implicit val format: Format[StartTournament.type] = singletonFormat(StartTournament)
-}
-
-object CreateTournament {
-  implicit val format: Format[CreateTournament] = Json.format
-}
-
-object Choose {
-  implicit val format: Format[Choose] = Json.format
-}
-
-object StartGame {
-  implicit val format: Format[StartGame] = Json.format
-}
-
-object ExpireGame {
-  implicit val format: Format[ExpireGame] = Json.format
-}
-
-object NextRound {
-  implicit val format: Format[NextRound] = Json.format
-}
-
-object JoinTournament {
-  implicit val format: Format[JoinTournament] = Json.format
-}
+case object FinishTournament extends TournamentCommand with ReplyType[Boolean]
+case object DeleteTournament extends TournamentCommand with ReplyType[Boolean]
+case object GetTournament extends TournamentCommand with ReplyType[Option[Tournament]]
+case object StartTournament extends TournamentCommand with ReplyType[Boolean]
 
 object TournamentSerializerRegistry extends JsonSerializerRegistry {
   override def serializers = List(
@@ -303,18 +294,20 @@ object TournamentSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[StartTournament.type],
     JsonSerializer[JoinTournament],
     JsonSerializer[StartGame],
-    JsonSerializer[ExpireGame],
+    JsonSerializer[FinishGame],
     JsonSerializer[Choose],
     JsonSerializer[NextRound],
     JsonSerializer[Chosen],
     JsonSerializer[NextRoundStarted],
-    JsonSerializer[GameExpired],
+    JsonSerializer[GameFinished],
     JsonSerializer[GameStarted],
     JsonSerializer[GetTournament.type],
     JsonSerializer[TournamentDeleted.type],
-    JsonSerializer[TournamentFinished],
+    JsonSerializer[TournamentFinished.type],
     JsonSerializer[TournamentCreated],
     JsonSerializer[Joined],
-    JsonSerializer[TournamentStarted]
+    JsonSerializer[TournamentStarted.type],
+    JsonSerializer[TournamentUpdated],
+    JsonSerializer[UpdateTournament.type ]
   )
 }

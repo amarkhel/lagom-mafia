@@ -1,0 +1,24 @@
+@import com.amarkhel.user.api.User
+@import controllers.routes
+@(title: String, styles: Html = Html(""), scripts: Html = Html(""), modals: Html = Html(""))(loggedUser: Option[User])(content: Html)(implicit  messages: Messages)
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>@title</title>
+    <link href="@routes.MyAssets.resource("css/bootstrap.min.css")" rel="stylesheet">
+    <link rel='stylesheet' href='@routes.MyAssets.resource("css/main.css")'>
+    @styles
+    <script src="@routes.MyAssets.resource("scripts/jquery.js")"></script>
+    <script src="@routes.MyAssets.resource("scripts/bootstrap.min.js")"></script>
+    @scripts
+</head>
+<body>
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-md-offset-3">
+            @content
+        </div>
+    </div>
+</body>
+</html>

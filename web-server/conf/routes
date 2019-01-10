@@ -10,6 +10,9 @@ POST    /createTournament             controllers.TournamentController.create
 GET     /listOfTournaments            controllers.TournamentController.list
 GET     /deleteTournament/:name       controllers.TournamentController.delete(name:String)
 GET     /editTournament/:name         controllers.TournamentController.edit(name:String)
+GET     /joinTournament/:name         controllers.TournamentController.join(name:String)
+GET     /join                         controllers.TournamentController.joinPage
+GET     /startGame/:name/:id                controllers.TournamentController.startGame(name:String, id:Int)
 
 # Authentication pages
 GET		/signup							controllers.Auth.startSignUp

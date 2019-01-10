@@ -28,6 +28,7 @@ object GameEvent {
     concreteType[GameStarted].concreteType[GameCompleted].concreteType[Voted].concreteType[Prisoned].concreteType[Killed]
     .concreteType[Timeouted].concreteType[RoundEnded].concreteType[RoundStarted].concreteType[OmonHappened].concreteType[RecoveredByDoctor]
     .concreteType[MessageSent].concreteType[PrivateMessageSent].concreteType[MafiaNotKilled].concreteType[GameStopped]
+    .concreteType[EarnedMaf].concreteType[SumrakVoted]
 }
 case class GameStarted(id:Int, loc:Location, start:String, players:List[String], time:Int) extends GameEvent{
   def date = LocalDateTime.parse(start)

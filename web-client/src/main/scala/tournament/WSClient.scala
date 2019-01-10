@@ -14,7 +14,7 @@ object WS {
   private var client: Option[WSClient] = None
 
   def choose(player: String) = {
-    client.map(_.send(s"CHOOSE:$player"))
+    client.map(_.send(s"CHOOSE----$player"))
   }
 
   def next = {

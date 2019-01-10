@@ -82,7 +82,6 @@ case class Tournament(name: String, countPlayers:Int = 0, creator:String = "", p
   def isGameFinishedForUser(user:String) = haveSolution(user, _.isFinished || shouldFinishCurrentGame)
 
   def startGame(gameId: Int): Tournament = {
-
     this
       .modify(_.games.eachWhere(idCondition(gameId)).started).using(timeModification)
       .modify(_.players.each.solutions).using(Solution(gameId, Map.empty, 0, isFinished = false) :: _)
@@ -157,6 +156,7 @@ case class Tournament(name: String, countPlayers:Int = 0, creator:String = "", p
   def inProgressGameId = gameInProgress.map(_.id).get
   def countGames = games.size
   def countJoinedPlayers = players.size
+  def playersString = players.map(_.name).mkString(",")
   def winners = stat.map(x => x._1 -> x._3).sortBy(_._2)
   def inProgress = started && !finished
   def findPlayer(user: String) = players.find(_.name == user)

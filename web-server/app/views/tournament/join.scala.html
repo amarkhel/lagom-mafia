@@ -1,0 +1,29 @@
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.user.api.User
+@import controllers.routes
+@(tournaments: Seq[Tournament], user:Option[User])(implicit requestHeader:RequestHeader, messages: Messages)
+@views.html.layout.logged("Создать турнир")(user) {
+    @tournaments.map { tour =>
+        <div class="panel-group" id="accordion">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <center>
+                                    <span><b style="color:green">@tour.name</b></span>
+                                    Участников - <b style="color:green">@tour.countPlayers</b>
+                                    Максимальное время на игру - <b style="color:green">@tour.gameExpirationTime ч.</b>
+                                    Присоединилось - <b style="color:green">@tour.countJoinedPlayers </b>
+                                    <span>
+                                        <a href="@routes.TournamentController.join(tour.name)">Присоединиться</a>
+                                    </span>
+                                </center>
+                            </li>
+                        </ul>
+                    </h4>
+                </div>
+            </div>
+        </div>
+    }
+}

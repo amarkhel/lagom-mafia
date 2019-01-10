@@ -6,6 +6,7 @@
 
 @views.html.layout.logged("Создать турнир")(Some(user)) {
     @tags.alertFromRequest(request, "error")
+    @form.errors.map { error => @tags.alert(error.message, "error")}
     @form.globalError.map { error => @tags.alert(error.message, "error")}
     @b3.formCSRF(routes.TournamentController.create) {
         <fieldset>

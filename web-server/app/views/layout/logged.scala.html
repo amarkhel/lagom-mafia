@@ -33,12 +33,10 @@
                         <i class="fa fa-user fa-fw"></i>@Html(Messages("topbar.hello")) @loggedUser.get.name<i class="fa fa-caret-down"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-user">
-                        <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
-                        </li>
-                        <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
+                        <li><a href="#"><i class="fa fa-user fa-fw"></i>Профиль</a>
                         </li>
                         <li class="divider"></li>
-                        <li><a href="@routes.Auth.signOut"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+                        <li><a href="@routes.Auth.signOut"><i class="fa fa-sign-out fa-fw"></i> Выйти</a>
                         </li>
                     </ul>
                 </li>
@@ -47,13 +45,16 @@
 				<ul class="nav navbar-nav side-nav">
 				@isAdmin{
 					<li class="active">
-						<a id="game" href="@routes.GameController.index"><i class="fa fa-fw fa-dashboard"></i>Просмотреть игру</a>
-					</li>}(loggedUser)
-					<li>
-						<a id="tournamentsList" href="@routes.TournamentController.list"><i class="fa fa-fw fa-dashboard"></i>Список турниров</a>
+						<a id="game" href="@routes.GameController.index"><i class="fa fa-fw"></i>Просмотреть игру</a>
 					</li>
 					<li>
-						<a id="tournamentCreate" href="@routes.TournamentController.index"><i class="fa fa-fw fa-dashboard"></i>Создать турнир</a>
+						<a id="tournamentsList" href="@routes.TournamentController.list"><i class="fa fa-fw"></i>Список турниров</a>
+					</li>
+					<li>
+						<a id="tournamentCreate" href="@routes.TournamentController.index"><i class="fa fa-fw"></i>Создать турнир</a>
+					</li>}(loggedUser)
+					<li>
+						<a id="tournamentJoin" href="@routes.TournamentController.joinPage"><i class="fa fa-fw"></i>Присоединиться к турниру</a>
 					</li>
 				</ul>
 			</div>

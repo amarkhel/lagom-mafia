@@ -16,7 +16,8 @@ import utils.silhouette.{AdminAction, MyEnv}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class TournamentForm(name: String, countPlayers:Int, expiration:Int, games:String, isNew:Boolean = true)
+case class TournamentForm(name: String, countPlayers:Int, expiration:Int, games:String, isNew:String = "true")
+case class Tournaments(created:Seq[Tournament], started:Seq[Tournament], finished:Seq[Tournament])
 
 @Singleton
 class TournamentController @Inject()(cc: ControllerComponents, silhouette: Silhouette[MyEnv], messagesApi:MessagesApi, tournamentService:TournamentService, mafiaService:MafiaService)
@@ -32,12 +33,26 @@ class TournamentController @Inject()(cc: ControllerComponents, silhouette: Silho
       case Some(t) =>
         Future(Ok(views.html.tournament.index(
           tournamentForm.fill(
-            TournamentForm(t.name, t.countPlayers, t.gameExpirationTime, t.games.map(_.id).mkString(","), false)
+            TournamentForm(t.name, t.countPlayers, t.gameExpirationTime, t.games.map(_.id).mkString(","), "false")
           ),
           request.identity)
         )
       )
       case None => Future(Ok(views.html.tournament.index(tournamentForm, request.identity)).flashing("Ошибка" -> "Турнир с таким именем не найден"))
+    }
+  }
+
+  def join(name:String) = UserAwareAction.async { implicit request =>
+    tournamentService.joinTournament(name, request.identity.get.name).invoke().flatMap {
+      case true => Future(Redirect(routes.TournamentController.joinPage))
+      case false => Future(Redirect(routes.TournamentController.joinPage).flashing("Ошибка" -> "Невозможно присоедниться к турниру"))
+    }
+  }
+
+  def startGame(name:String, id:Int) = SecuredAction(AdminAction("")).async { implicit request =>
+    tournamentService.startGame(name, id).invoke().flatMap {
+      case true => Future(Redirect(routes.TournamentController.list))
+      case false => Future(Redirect(routes.TournamentController.list).flashing("Ошибка" -> "Невозможно стартовать игру"))
     }
   }
 
@@ -50,7 +65,18 @@ class TournamentController @Inject()(cc: ControllerComponents, silhouette: Silho
 
   def list = SecuredAction(AdminAction("")).async { implicit request =>
     tournamentService.getTournaments.invoke().flatMap(
-      list => Future(Ok(views.html.tournament.list(list, Some(request.identity))))
+      list => {
+        val t = new Tournaments(list.filter(!_.started), list.filter(t => t.started && !t.finished), list.filter(_.finished))
+        Future(Ok(views.html.tournament.list(t, Some(request.identity))))
+      }
+    )
+  }
+
+  def joinPage = UserAwareAction.async { implicit request =>
+    tournamentService.getTournaments.invoke().flatMap(
+      list => {
+        Future(Ok(views.html.tournament.join(list.filter(!_.started), Some(request.identity.get))))
+      }
     )
   }
 
@@ -67,7 +93,7 @@ class TournamentController @Inject()(cc: ControllerComponents, silhouette: Silho
   }
 
   private def editTournament(tournament:TournamentForm, name:String) = {
-    val action = if(tournament.isNew) tournamentService.createTournament else tournamentService.updateTournament
+    val action = if(tournament.isNew == "true") tournamentService.createTournament else tournamentService.updateTournament
     for {
       sources <- Future.sequence(
         tournament.games.split(",")
@@ -88,6 +114,6 @@ class TournamentController @Inject()(cc: ControllerComponents, silhouette: Silho
     "countPlayers" -> number,
     "expiration" -> number,
     "games" -> nonEmptyText,
-    "isNew" -> boolean
+    "isNew" -> default(text, "true")
   )(TournamentForm.apply)(TournamentForm.unapply))
 }

@@ -2,7 +2,6 @@ package tournament
 
 import com.amarkhel.mafia.common._
 import prickle._
-
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
 import scalaz.syntax.std.all._
@@ -10,19 +9,20 @@ import scalaz.syntax.std.all._
 @JSExport
 object EventHandler {
   import GamerStatus._
-  private var state:(Int, List[String], RoundType, Int, Boolean) = (0, List.empty[String], RoundType.INITIAL, 0, false)
+  type State = (Int, List[String], RoundType, Int, Boolean)
+  private var state:State = (0, List.empty[String], RoundType.INITIAL, 0, false)
 
   private def sys(message:String)(implicit time:String) = {
     UI.systemMessage(time + message)
   }
 
-  private def handle(state:(Int, List[String], RoundType, Int, Boolean), event: GameEvent): ((Int, List[String], RoundType, Int, Boolean), Unit) = {
+  private def handle(state:State, event: GameEvent): (State, Unit) = {
     implicit val time:String = Model.timeTostr(event.time)
     event match {
       case GameStarted(_, loc, _, players, _) => {
         UI.setPlayers(players)
         UI.renderLocation(loc.name)
-        UI.updateFooter(state._1, state._2)
+        UI.updateFooter(state._1, state._2, List.empty, 1, "")
         sys(" Минуточку, распределяем роли.")
         sys(" Игра началась! В игре участвуют: " + players.map("<b>" + _ + "</b>").mkString(","))
         for {
@@ -133,7 +133,7 @@ object EventHandler {
     }
   }
 
-  private def removePlayer(state: (Int, List[String], RoundType, Int, Boolean), player: Gamer, status:GamerStatus) = {
+  private def removePlayer(state: State, player: Gamer, status:GamerStatus) = {
     val mafiaKilled = player.isBoss || player.isMafia
     UI.replaceUserStatus(player, status)
     (state.copy(if (mafiaKilled) state._1 - 1 else state._1, state._2.filter(_ != player.name)), ())
@@ -145,15 +145,16 @@ object EventHandler {
   }
 
   def parseEvents(e: String) = {
-    val events = Unpickle[List[GameEvent]].fromString(e).get.map(cutSmiles)
+    val s = Unpickle[TournamentGameState].fromString(e).get
+    val events = s.events.map(cutSmiles)
     if (state._3 == RoundType.INITIAL) {
       val firstEvent = events.head.asInstanceOf[GameStarted]
       val mafias = Model.countMafia(firstEvent.players.size)
       val playerNames = firstEvent.players
       state = (mafias, playerNames, RoundType.INITIAL, 0, false)
     }
-    state = events.mapAccumLeft(state, (s: (Int, List[String], RoundType, Int, Boolean), event: GameEvent) => handle(s, event))._1
-    UI.updateFooter(state._1, state._2)
+    state = events.mapAccumLeft(state, (s: State, event: GameEvent) => handle(s, event))._1
+    UI.updateFooter(state._1, state._2, s.chosen.map(_._1).toList, s.currentRound, s.timeToEnd)
   }
 
   private def cutSmiles(mess:GameEvent) = mess match {

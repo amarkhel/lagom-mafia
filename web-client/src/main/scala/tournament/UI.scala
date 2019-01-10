@@ -29,13 +29,20 @@ object UI {
       case DEAD => "red"
       case PRISONED => "blue"
       case UNKNOWN => "black"
+      case CHOSEN => "yellow"
     }
   }
 
-  def updateFooter(mafias: Int, players: List[String]) = {
+  def updateFooter(mafias: Int, players: List[String], chosen:List[String], currentRound:Int, time:String) = {
     val count = mafias - selectedPlayers.size
     countUnknown.innerHTML = "" + count
     countUnknown.render
+    chosenLabel.innerHTML = "" + chosen.mkString(", ")
+    chosenLabel.render
+    timeToEnd.innerHTML = "" + time
+    timeToEnd.render
+    currentRoundLabel.innerHTML = "" + currentRound
+    currentRoundLabel.render
     for {
       player <- allPlayers
     } yield {
@@ -43,7 +50,9 @@ object UI {
       val newElem = if(players.contains(player)){
         label(id:=s"${player}_option", style:="padding-right:20px")(input(`type`:="checkbox", id:=s"${player}_option", value:=s"${player}", onclick:={ () => WS.choose(player)}), raw(player))
       } else {
-        span(id:=s"${player}_option", style:=s"padding-right:20px; color:${getColor(playerRoleMap.get(player).get._1)}", title:=s"${playerRoleMap.get(player).get._2} - ${playerRoleMap.get(player).get._1.title}")(raw(player))
+        if (chosen.contains(player)) {
+          span(id:=s"${player}_option", style:=s"padding-right:20px; color:${getColor(CHOSEN)}", title:=s"${playerRoleMap.get(player).get._2} - ${CHOSEN.title}")(raw(player))
+        } else span(id:=s"${player}_option", style:=s"padding-right:20px; color:${getColor(playerRoleMap.get(player).get._1)}", title:=s"${playerRoleMap.get(player).get._2} - ${playerRoleMap.get(player).get._1.title}")(raw(player))
       }
       if (old != null) {
         playerOptions.replaceChild(newElem.render, old.render)
@@ -54,6 +63,9 @@ object UI {
     playerOptions.render
   }
 
+  private val timeToEnd = dom.document.getElementById("timeToEnd")
+  private val currentRoundLabel = dom.document.getElementById("currentRound")
+  private val chosenLabel = dom.document.getElementById("chosen")
   private val playerOptions = dom.document.getElementById("playersOptions")
   private val countUnknown = dom.document.getElementById("countUnknownMafia")
   private val playersTable = dom.document.getElementById("playersTable")

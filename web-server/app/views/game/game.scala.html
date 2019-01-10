@@ -31,6 +31,11 @@
                     <span id="playersOptions"></span>
                     <a href="@routes.Auth.signOut">@Messages("signout")</a>
                 </div>
+                <div class="info">
+                    <label>Текущий раунд <span style="color:red;" id="currentRound"></span></label>
+                    <label>Вы считаете что мафия <span style="color:red;" id="chosen"></span></label>
+                    <label>Осталось времени <span style="color:red;" id="timeToEnd"></span></label>
+                </div>
                 <input class="btn btn-primary" type="submit" id="nextRoundButton" value="Загрузить следующий ход">
             </div>
         </div>

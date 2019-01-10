@@ -1,0 +1,59 @@
+@import com.amarkhel.tournament.api.Tournament
+@import controllers.routes
+@(tour: Tournament)(implicit messages: Messages)
+<div class="panel-group" id="accordion">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="false" class="collapsed">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <center>
+                                <span><b style="color:green">@tour.name</b></span>
+                                Участников - <b style="color:green">@tour.countPlayers</b>
+                                Максимальное время на игру - <b style="color:green">@tour.gameExpirationTime ч.</b>
+                                Присоединились - <b style="color:green">@tour.playersString </b>
+                            </span>
+                            </center>
+                        </li>
+                    </ul>
+                </a>
+            </h4>
+        </div>
+        <div id="collapseOne" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+            <div class="panel-body">
+                <div class="panel">
+                    @tour.games.map { game =>
+                    <div class="col-sm-6" style="padding:10px;">
+                        <div class="card border-danger">
+                            <div class="card-header" style="padding-bottom:5px;">
+                                <center>Игра №
+                                    <a target="_blank" href="http://mafiaonline.ru/log/@game.id">
+                                        <b style="color:red">@game.id</b>
+                                    </a>
+                                </center>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush ">
+                                    <li class="list-group-item"><b style="color:green">@game.location</b></li>
+                                    <li class="list-group-item">Игроков - <b style="color:green">@game.countPlayers</b></li>
+                                    <li class="list-group-item">Раундов - <b style="color:green">@game.countRounds</b></li>
+                                    <li class="list-group-item">Мафия - <b style="color:red">@game.mafias.mkString(",")</b></li>
+                                    @if(game.finished) {
+                                        <li class="list-group-item">Завершена - <b style="color:red">Результат</b></li>
+                                    } else if(game.inProgress){
+                                        <li class="list-group-item">В прогрессе - <b style="color:red">Посмотреть</b></li>
+                                    } else {
+                                        <li class="list-group-item"><b style="color:red"><a href="@routes.TournamentController.startGame(tour.name, game.id)">Стартовать</a></b></li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

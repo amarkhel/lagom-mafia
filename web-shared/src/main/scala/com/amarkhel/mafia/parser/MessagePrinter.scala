@@ -23,8 +23,8 @@ object MessagePrinter {
     }
   }
 
-  def format(e:List[GameEvent]) = {
-    Pickle.intoString(e.map(cutSmiles))
+  def format(state:TournamentGameState) = {
+    Pickle.intoString(state.copy(events = state.events.map(cutSmiles)))
   }
 
   private def cutSmiles(mess:GameEvent) = mess match {

@@ -11,8 +11,9 @@ object GamerStatus extends Serializable {
   case object DEAD extends GamerStatus{val name="dead"; val title=" (убит)"}
   case object TIMEOUT extends GamerStatus{val name="timeout"; val title=" (вышел по тайм-ауту)"}
   case object PRISONED extends GamerStatus{val name="jailed"; val title=" (отправлен в тюрьму)"}
+  case object CHOSEN extends GamerStatus{val name="alive"; val title=" (выбран вами мафией)"}
 
-  val values:List[GamerStatus] = List(ALIVE, DEAD, TIMEOUT, PRISONED, UNKNOWN)
+  val values:List[GamerStatus] = List(ALIVE, DEAD, TIMEOUT, PRISONED, UNKNOWN, CHOSEN)
 }
 
 object Model {

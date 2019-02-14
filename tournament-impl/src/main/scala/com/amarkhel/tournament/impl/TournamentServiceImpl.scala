@@ -6,13 +6,13 @@ import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.amarkhel.tournament.api.{Tournament, TournamentService, UserState}
+import com.amarkhel.tournament.api._
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class TournamentServiceImpl(registry: PersistentEntityRegistry, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) extends TournamentService {
+class TournamentServiceImpl(registry: PersistentEntityRegistry, system: ActorSystem, solutionService:SolutionServiceImpl)(implicit ec: ExecutionContext, mat: Materializer) extends TournamentService {
 
   private val currentIdsQuery = PersistenceQuery(system).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
   private def refFor(name: String) = registry.refFor[TournamentEntity](name)
@@ -83,6 +83,10 @@ class TournamentServiceImpl(registry: PersistentEntityRegistry, system: ActorSys
     for {
       result <- refFor(name).ask(FinishGame(id))
       tournament <- if (result) refFor(name).ask(GetTournament) else Future.successful(Some(Tournament("empty")))
+      _ = tournament.get.players.map(p => (p.name -> p.getById(id).get)).map(s => {
+        val entity = registry.refFor[SolutionEntity]("1")
+        entity.ask(PostSolution(tournament.get.games.filter(_.id == id).head, s._2, s._1))
+      })
       _ <- if (tournament.get.allGamesCompleted) refFor(name).ask(FinishTournament) else Future.successful(false)
     } yield result
   }
@@ -104,12 +108,33 @@ class TournamentServiceImpl(registry: PersistentEntityRegistry, system: ActorSys
   override def joinTournament(name: String, user: String) = ServiceCall { _ =>
     for {
       result <- refFor(name).ask(JoinTournament(user))
-      t <- if (result) refFor(name).ask(GetTournament) else Future.successful(Some(Tournament("empty")))
-      _ <- if (t.get.allPlayersJoined) refFor(name).ask(StartTournament) else Future.successful(false)
+      _ <- if (result) refFor(name).ask(GetTournament) else Future.successful(false)
+      //_ <- if (t.get.allPlayersJoined) refFor(name).ask(StartTournament) else Future.successful(false)
     } yield result
+  }
+
+  override def removeUser(name: String, user: String) = ServiceCall { _ =>
+    refFor(name).ask(RemoveUser(user))
   }
 
   override def getUserState(name: String, tournament:String): ServiceCall[NotUsed, Option[UserState]] = { _ =>
     loadTournaments.filter(t => t.name == tournament && t.havePlayer(name)).runWith(Sink.seq).map(_.head.findPlayer(name))
+  }
+
+  override def saveSolution(player:String) = ServiceCall { pair =>
+    val entity = registry.refFor[SolutionEntity]("1")
+    entity.ask(PostSolution(pair._1, pair._2, player))
+  }
+
+  override def getAllSolutions = ServiceCall { _ =>
+    solutionService.findAll
+  }
+
+  override def getSolutionsForPlayer(name: String)= ServiceCall { _ =>
+    solutionService.findByPlayer(name)
+  }
+
+  override def getSolutionsForId(id: Int)= ServiceCall { _ =>
+    solutionService.findById(id)
   }
 }

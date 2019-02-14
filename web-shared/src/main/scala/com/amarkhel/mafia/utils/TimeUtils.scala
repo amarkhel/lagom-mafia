@@ -15,7 +15,7 @@ object TimeUtils {
 
   implicit def dateToDay(date:LocalDate) = Day(date.getYear, date.getMonthValue, date.getDayOfMonth)
 
-  def diffInDaysFromNow(date:LocalDate) = Math.abs(DAYS.between(date, LocalDate.now)).toInt
+  def diffInDaysFromNow(date:LocalDate) = Math.min(0, DAYS.between(date, LocalDate.now).toInt)
 
   def isToday(d: Day) = {
     val now = LocalDate.now

@@ -11,6 +11,7 @@ import com.mohiva.play.silhouette.api.util.{Clock, Credentials, PasswordHasherRe
 import com.mohiva.play.silhouette.impl.authenticators.CookieAuthenticator
 import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
+import com.typesafe.config.ConfigFactory
 import javax.inject.{Inject, Singleton}
 import net.ceedubs.ficus.Ficus._
 import play.api.Configuration
@@ -69,6 +70,7 @@ class Auth @Inject() (
     }
   }
 
+  val badNames = ConfigFactory.load().getStringList("badnames")
   /**
    * Handles the form filled by the user. The user and its password are saved and it sends him an email with a link to confirm his email address.
    */
@@ -79,14 +81,18 @@ class Auth @Inject() (
         userService.checkUnique(user).flatMap {
           case Some(error) => Future.successful(BadRequest(viewsAuth.signUp(signUpForm.withError("name", Messages(error)))))
           case None => {
-            for {
-              savedUser <- userService.save(user)
-              token <- tokenService.createToken(user.email, true).invoke()
-              _ <- authInfoRepository.add(user.name, passwordHasherRegistry.current.hash(user.password))
-            } yield {
-              mailer.welcome(savedUser.get, link = routes.Auth.signUp(token.id).absoluteURL())
-              println("hashed password-" + passwordHasherRegistry.current.hash(user.password))
-              Ok(viewsAuth.almostSignedUp(savedUser.get))
+            if(badNames.contains(user.name)){
+              Future.successful(BadRequest(viewsAuth.signUp(signUpForm.withError("name", "Извините но ваш ник по шкале петушиности близок к 100%, не можем пропустить вас на сайт"))))
+            } else {
+              for {
+                savedUser <- userService.save(user)
+                token <- tokenService.createToken(user.email, true).invoke()
+                _ <- authInfoRepository.add(user.name, passwordHasherRegistry.current.hash(user.password))
+              } yield {
+                mailer.welcome(savedUser.get, link = routes.Auth.signUp(token.id).absoluteURL())
+                println("hashed password-" + passwordHasherRegistry.current.hash(user.password))
+                Ok(viewsAuth.almostSignedUp(savedUser.get))
+              }
             }
           }
         }

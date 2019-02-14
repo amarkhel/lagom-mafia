@@ -1,26 +1,25 @@
 package tournament
 
 import com.amarkhel.mafia.common._
+import com.karasiq.bootstrap4.Bootstrap.default._
 import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.html.TableRow
-
-import scala.scalajs.js.annotation.JSExport
+import org.scalajs.dom.raw.MouseEvent
 import scalatags.JsDom._
 import scalatags.JsDom.all._
-import GamerStatus._
-import org.scalajs.dom.raw.{MouseEvent, Node}
+import tournament.GamerStatus._
 
-import scala.collection.mutable.ListBuffer
+import scala.scalajs.js.annotation.JSExport
 
 @JSExport
 object UI {
+  def updateTime(time: String) = {
+    timeToEnd.innerHTML = "" + time
+    timeToEnd.render
+  }
 
   private val playerRoleMap = collection.mutable.HashMap[String, (GamerStatus, String)]()
-  private var allPlayers = List.empty[String]
-  private var selectedPlayers = ListBuffer[String]()
-
-  def setPlayers(p:List[String]) = allPlayers = p
 
   def getColor(status: GamerStatus) = {
     status match {
@@ -33,25 +32,27 @@ object UI {
     }
   }
 
-  def updateFooter(mafias: Int, players: List[String], chosen:List[String], currentRound:Int, time:String) = {
-    val count = mafias - selectedPlayers.size
-    countUnknown.innerHTML = "" + count
+  def updateFooter(state:TournamentGameState) = {
+    countUnknown.innerHTML = "" + state.countPossibleChoices
     countUnknown.render
-    chosenLabel.innerHTML = "" + chosen.mkString(", ")
+    chosenLabel.innerHTML = {
+      if(state.chosen.size == 0) "Вы пока не выбрали никого"
+      else "Вы считаете мафией " + "<span style=\"color:red;\">" + state.chosen.map(_._1).mkString(", ") + "</span>"
+    }
     chosenLabel.render
-    timeToEnd.innerHTML = "" + time
+    timeToEnd.innerHTML = "" + state.started
     timeToEnd.render
-    currentRoundLabel.innerHTML = "" + currentRound
+    currentRoundLabel.innerHTML = "" + state.currentRound
     currentRoundLabel.render
     for {
-      player <- allPlayers
+      player <- state.players
     } yield {
       val old = dom.document.getElementById(s"${player}_option")
-      val newElem = if(players.contains(player)){
-        label(id:=s"${player}_option", style:="padding-right:20px")(input(`type`:="checkbox", id:=s"${player}_option", value:=s"${player}", onclick:={ () => WS.choose(player)}), raw(player))
+      val newElem = if(state.chosen.contains(player)){
+        span(id:=s"${player}_option", style:=s"padding-right:20px; color:${getColor(CHOSEN)}", title:=s"${player} - ${CHOSEN.title}")(raw(player))
       } else {
-        if (chosen.contains(player)) {
-          span(id:=s"${player}_option", style:=s"padding-right:20px; color:${getColor(CHOSEN)}", title:=s"${playerRoleMap.get(player).get._2} - ${CHOSEN.title}")(raw(player))
+        if (!state.eliminatedPlayers.map(_.name).contains(player)) {
+          label(id:=s"${player}_option", style:="padding-right:20px")(input(`type`:="checkbox", id:=s"${player}_option", value:=s"${player}", onclick:={ () => WS.choose(player)}), raw(player))
         } else span(id:=s"${player}_option", style:=s"padding-right:20px; color:${getColor(playerRoleMap.get(player).get._1)}", title:=s"${playerRoleMap.get(player).get._2} - ${playerRoleMap.get(player).get._1.title}")(raw(player))
       }
       if (old != null) {
@@ -63,6 +64,7 @@ object UI {
     playerOptions.render
   }
 
+  private val modal = dom.document.getElementById("modal")
   private val timeToEnd = dom.document.getElementById("timeToEnd")
   private val currentRoundLabel = dom.document.getElementById("currentRound")
   private val chosenLabel = dom.document.getElementById("chosen")
@@ -74,6 +76,17 @@ object UI {
   private val location = dom.document.getElementById("location")
   private val nextButton = dom.document.getElementById("nextRoundButton").addEventListener[MouseEvent]("click", e => WS.next)
   private def playerTag(name:String) = dom.document.getElementById(name)
+
+  def showModal(title:String, msg:String, msg2:String="") = {
+    Modal()
+      .withTitle(title)
+      .withBody(p(raw(msg)), p(raw(msg2)))
+      .withButtons(Modal.button("OK", Modal.dismiss, onclick := Callback.onClick { _ ⇒
+        dom.window.location.href = "http://" + dom.window.location.hostname + "/index"
+      }))
+      .withDialogStyle(ModalDialogSize.small)
+      .show()
+  }
 
   def finishRound(round: Int) = {
     addHr()

@@ -1,0 +1,20 @@
+@import controllers.SearchForm
+@import b3.vertical.fieldConstructor
+@import controllers.routes
+@import com.amarkhel.user.api.User
+@(searchForm: Form[SearchForm], user: User)(implicit request: RequestHeader, messages: Messages)
+
+@views.html.layout.logged("Поиск партий")(Some(user), "search") {
+@tags.alertFromRequest(request, "error")
+@searchForm.globalError.map { error => @tags.alert(error.message, "error")}
+@b3.formCSRF(routes.SearchController.searchGames) {
+<fieldset>
+    <legend>Поиск партий по параметрам</legend>
+    @helper.repeat(searchForm("criterias")) { crit =>
+    <span>@crit("crit")</span>
+    @helper.inputText(crit("operation"))
+    }
+    @b3.submit('class -> "btn btn-primary btn-block"){ "Поиск" }
+</fieldset>
+}
+}

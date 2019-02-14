@@ -64,6 +64,7 @@ lazy val webClient = (project in file("web-client")).settings(commonSettings: _*
     "com.lihaoyi" %%% "scalarx" % "0.3.2",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.2",
     "org.scalaz" %%% "scalaz-core" % "7.2.16",
+    "com.github.karasiq" %%% "scalajs-bootstrap-v4" % "2.3.4",
     "com.lihaoyi" %%% "utest" % "0.6.3" % "test"
   )
 ).enablePlugins(ScalaJSPlugin, ScalaJSWeb).

@@ -1,5 +1,8 @@
 package com.amarkhel.tournament.impl
 
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+
 import com.amarkhel.mafia.utils.JsonFormats.singletonFormat
 import com.amarkhel.tournament.api._
 import com.amarkhel.tournament.impl.TournamentEntity._
@@ -16,6 +19,7 @@ object TournamentEntity {
   val TOURNAMENT_ALREADY_STARTED = "Турнир уже начался"
   val ALL_PEOPLE_JOINED = "Все люди уже набраны на этот турнир"
   val ALREADY_JOINED = "Вы уже добавлены к этому турниру"
+  val NOT_JOINED = "Этот игрок не присоединялся к турниру"
   val GAME_IN_PROGRESS = "Текущая игра уже выбрана"
   val NO_CURRENT_GAME = "Нету текущей игры"
   val BLANK_NAME = "Невозможно добавить пользователя без имени"
@@ -26,6 +30,14 @@ object TournamentEntity {
   val ALREADY_VOTED_FOR_THIS_PLAYER = "Вы уже проголосовали за этого игрока"
   val ALL_MAFIA_CHOSEN = "Вы уже выбрали всех мафиози"
   val LAST_ROUND_ALREADY_CHOSEN = "Последний раунд уже выбран"
+  val NOT_ALL_PLAYERS_JOINED = "Количество заявленных участников меньше заявленного"
+  val PLAYERS_MUST_BE_EMPTY = "Ошибка при создании турнира. В новом турнире не должно быть игроков"
+  val COUNT_GAMES_EMPTY = "В туринире должна быть хотя бы одна игра"
+  val TOURNAMENT_NAME_EMPTY = "Турнир должен иметь имя"
+  val COUNT_PLAYERS_WRONG = "Число игроков в турнире должно быть больше одного но меньше 20"
+  val CREATOR_IS_EMPTY = "У турнира нет создателя."
+  val SHOULD_BE_NOT_STARTED_NOT_FINISHED = "Ошибка. Турнир не должен быть окончен либо стартован"
+  val NOT_ALL_GAMES_FINISHED = "Не все игры закончены"
 }
 
 class TournamentEntity extends PersistentEntity {
@@ -35,7 +47,29 @@ class TournamentEntity extends PersistentEntity {
   override def initialState = None
 
   val notExistBehavior = Actions().onCommand[CreateTournament, Tournament] {
-    case (CreateTournament(tournament), ctx, _) => ctx.thenPersist(TournamentCreated(tournament))(_ => ctx.reply(tournament))
+    case (CreateTournament(tournament), ctx, _) => {
+      if(!tournament.players.isEmpty){
+        ctx.invalidCommand(PLAYERS_MUST_BE_EMPTY)
+        ctx.done
+      } else if (tournament.games.isEmpty) {
+        ctx.invalidCommand(COUNT_GAMES_EMPTY)
+        ctx.done
+      } else if (tournament.name.isEmpty) {
+        ctx.invalidCommand(TOURNAMENT_NAME_EMPTY)
+        ctx.done
+      } else if (tournament.countPlayers < 2 || tournament.countPlayers > 20) {
+        ctx.invalidCommand(COUNT_PLAYERS_WRONG)
+        ctx.done
+      } else if (tournament.creator.isEmpty) {
+        ctx.invalidCommand(CREATOR_IS_EMPTY)
+        ctx.done
+      } else if (tournament.started || tournament.finished) {
+        ctx.invalidCommand(SHOULD_BE_NOT_STARTED_NOT_FINISHED)
+        ctx.done
+      } else {
+        ctx.thenPersist(TournamentCreated(tournament))(_ => ctx.reply(tournament))
+      }
+    }
   }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
     case (GetTournament, ctx, _) => ctx.reply(None)
   }.onReadOnlyCommand[DeleteTournament.type, Boolean] {
@@ -56,6 +90,8 @@ class TournamentEntity extends PersistentEntity {
     case (FinishTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
   }.onReadOnlyCommand[JoinTournament, Boolean] {
     case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
+  }.onReadOnlyCommand[RemoveUser, Boolean] {
+    case (RemoveUser(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_FOUND)
   }.onEvent {
     case (TournamentCreated(tournament), _) => Some(tournament)
   }
@@ -69,7 +105,14 @@ class TournamentEntity extends PersistentEntity {
   }.onReadOnlyCommand[FinishTournament.type, Boolean] {
     case (FinishTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_NOT_STARTED)
   }.onCommand[StartTournament.type, Boolean] {
-    case (StartTournament, ctx, _) => ctx.thenPersist(TournamentStarted)(_ => ctx.reply(true))
+    case (StartTournament, ctx, t) => {
+      if(t.get.allPlayersJoined) {
+        ctx.thenPersist(TournamentStarted)(_ => ctx.reply(true))
+      } else {
+        ctx.invalidCommand(NOT_ALL_PLAYERS_JOINED)
+        ctx.done
+      }
+    }
   }.onReadOnlyCommand[CreateTournament, Tournament] {
     case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onReadOnlyCommand[StartGame, Boolean] {
@@ -96,9 +139,23 @@ class TournamentEntity extends PersistentEntity {
         ctx.thenPersist(Joined(user))(_ => ctx.reply(true))
       }
     }
+  }.onCommand[RemoveUser, Boolean] {
+    case (RemoveUser(user), ctx, tournament) => {
+      val t = tournament.get
+      if(user == null || user.isEmpty) {
+        ctx.invalidCommand(BLANK_NAME)
+        ctx.done
+      } else if (!t.havePlayer(user)) {
+        ctx.invalidCommand(NOT_JOINED)
+        ctx.done
+      } else {
+        ctx.thenPersist(UserRemoved(user))(_ => ctx.reply(true))
+      }
+    }
   }.onEvent {
     case (TournamentDeleted, _) => None
     case (Joined(name), t) => Some(t.get.join(name))
+    case (UserRemoved(name), t) => Some(t.get.remove(name))
     case (TournamentStarted, t) => Some(t.get.startTournament)
     case (TournamentUpdated(tournament), _) => Some(tournament)
   }
@@ -150,12 +207,16 @@ class TournamentEntity extends PersistentEntity {
     }
   }.onReadOnlyCommand[JoinTournament, Boolean] {
     case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[RemoveUser, Boolean] {
+    case (RemoveUser(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onReadOnlyCommand[CreateTournament, Tournament] {
     case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onReadOnlyCommand[UpdateTournament, Tournament] {
     case (UpdateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onEvent {
-    case (Chosen(pl, maf, id), t) => Some(t.get.chooseMafia(pl, maf, id))
+    case (Chosen(pl, maf, id), t) => {
+      Some(t.get.chooseMafia(pl, maf, id, ChronoUnit.SECONDS.between(t.get.gameInProgress.get.started.get, LocalDateTime.now).toInt))
+    }
     case (NextRoundStarted(pl, id), t) => Some(t.get.nextRound(pl, id))
     case (GameFinished(id), t) => Some(t.get.finishGame(id))
     case (TournamentFinished, t) => Some(t.get.finishTournament)
@@ -166,7 +227,14 @@ class TournamentEntity extends PersistentEntity {
   }.onReadOnlyCommand[GetTournament.type, Option[Tournament]] {
     case (GetTournament, ctx, t) => ctx.reply(Some(t.get))
   }.onCommand[FinishTournament.type, Boolean] {
-    case (FinishTournament, ctx, _) => ctx.thenPersist(TournamentFinished)(_ => ctx.reply(true))
+    case (FinishTournament, ctx, t) => {
+      if(t.get.games.exists(_.finished.isEmpty)){
+        ctx.invalidCommand(NOT_ALL_GAMES_FINISHED)
+        ctx.done
+      } else {
+        ctx.thenPersist(TournamentFinished)(_ => ctx.reply(true))
+      }
+    }
   }.onReadOnlyCommand[StartTournament.type, Boolean] {
     case (StartTournament, ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onCommand[StartGame, Boolean] {
@@ -188,6 +256,8 @@ class TournamentEntity extends PersistentEntity {
     case (FinishGame(_), ctx, _) => ctx.invalidCommand(NO_CURRENT_GAME)
   }.onReadOnlyCommand[JoinTournament, Boolean] {
     case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
+  }.onReadOnlyCommand[RemoveUser, Boolean] {
+    case (RemoveUser(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onReadOnlyCommand[CreateTournament, Tournament] {
     case (CreateTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_ALREADY_STARTED)
   }.onReadOnlyCommand[UpdateTournament, Tournament] {
@@ -219,6 +289,8 @@ class TournamentEntity extends PersistentEntity {
     case (Choose(_, _), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
   }.onReadOnlyCommand[JoinTournament, Boolean] {
     case (JoinTournament(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
+  }.onReadOnlyCommand[RemoveUser, Boolean] {
+    case (RemoveUser(_), ctx, _) => ctx.invalidCommand(TOURNAMENT_FINISHED)
   }
 
   override def behavior: Behavior = {
@@ -245,8 +317,10 @@ case object TournamentEvent{
   implicit val formatGF: Format[GameFinished] = Json.format
   implicit val formatJ: Format[Joined] = Json.format
   implicit val formatNR: Format[NextRoundStarted] = Json.format
+  implicit val formatPR: Format[UserRemoved] = Json.format
 }
 
+case class UserRemoved(player:String) extends TournamentEvent
 case class TournamentCreated(tournament:Tournament) extends TournamentEvent
 case class TournamentUpdated(tournament:Tournament) extends TournamentEvent
 case object TournamentFinished extends TournamentEvent
@@ -272,6 +346,7 @@ object TournamentCommand {
   implicit val formatFG: Format[FinishGame] = Json.format
   implicit val formatNR: Format[NextRound] = Json.format
   implicit val formatJT: Format[JoinTournament] = Json.format
+  implicit val formatRU: Format[RemoveUser] = Json.format
 }
 
 case class CreateTournament(tournament:Tournament) extends TournamentCommand with ReplyType[Tournament]
@@ -281,6 +356,7 @@ case class NextRound(user:String) extends TournamentCommand with ReplyType[Boole
 case class Choose(user:String, player:String) extends TournamentCommand with ReplyType[Boolean]
 case class FinishGame(id:Int) extends TournamentCommand with ReplyType[Boolean]
 case class JoinTournament(user:String) extends TournamentCommand with ReplyType[Boolean]
+case class RemoveUser(user:String) extends TournamentCommand with ReplyType[Boolean]
 case object FinishTournament extends TournamentCommand with ReplyType[Boolean]
 case object DeleteTournament extends TournamentCommand with ReplyType[Boolean]
 case object GetTournament extends TournamentCommand with ReplyType[Option[Tournament]]
@@ -293,6 +369,7 @@ object TournamentSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[CreateTournament],
     JsonSerializer[StartTournament.type],
     JsonSerializer[JoinTournament],
+    JsonSerializer[RemoveUser],
     JsonSerializer[StartGame],
     JsonSerializer[FinishGame],
     JsonSerializer[Choose],
@@ -306,6 +383,7 @@ object TournamentSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[TournamentFinished.type],
     JsonSerializer[TournamentCreated],
     JsonSerializer[Joined],
+    JsonSerializer[UserRemoved],
     JsonSerializer[TournamentStarted.type],
     JsonSerializer[TournamentUpdated],
     JsonSerializer[UpdateTournament.type ]

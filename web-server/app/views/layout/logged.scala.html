@@ -1,6 +1,6 @@
 @import com.amarkhel.user.api.User
 @import controllers.routes
-@(title: String, styles: Html = Html(""), scripts: Html = Html(""), modals: Html = Html(""))(loggedUser: Option[User])(content: Html)(implicit request: RequestHeader, messages: Messages)
+@(title: String, styles: Html = Html(""), scripts: Html = Html(""), modals: Html = Html(""))(loggedUser: Option[User], activeLink:String, showLeft:Boolean = true)(content: Html)(implicit request: RequestHeader, messages: Messages)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -19,9 +19,18 @@
 	<script src="https://code.highcharts.com/highcharts-3d.js"></script>
 	<script src="https://code.highcharts.com/modules/exporting.js"></script>
 	<script src="@routes.MyAssets.resource("scripts/main.js")"></script>
+    <script src="@routes.MyAssets.resource("webclient-opt.js")" type="text/javascript"></script>
+	<script src="@routes.MyAssets.resource("webclient-fastopt.js")" type="text/javascript"></script>
+    <script>
+        window.onload=function(){
+          tournament.HeartbeatHandler().main('@routes.GameController.heartbeat("").webSocketURL()@loggedUser.get.name')
+        }
+    </script>
     @scripts
 </head>
 <body>
+
+	@if(showLeft){
 	<div id="wrapper">
 		<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
 			<div class="navbar-header">
@@ -41,28 +50,93 @@
                     </ul>
                 </li>
             </ul>
+
 			<div class="collapse navbar-collapse navbar-ex1-collapse">
 				<ul class="nav navbar-nav side-nav">
 				@isAdmin{
-					<li class="active">
+				    @if(activeLink == "gameRandom"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="gameRandom" href="@routes.GameController.random"><i class="fa fa-fw"></i>Случайная игра</a>
+					</li>
+				    @if(activeLink == "game"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
 						<a id="game" href="@routes.GameController.index"><i class="fa fa-fw"></i>Просмотреть игру</a>
 					</li>
-					<li>
-						<a id="tournamentsList" href="@routes.TournamentController.list"><i class="fa fa-fw"></i>Список турниров</a>
-					</li>
-					<li>
+					@if(activeLink == "tournamentCreate"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
 						<a id="tournamentCreate" href="@routes.TournamentController.index"><i class="fa fa-fw"></i>Создать турнир</a>
+					</li>
+					@if(activeLink == "listSolutions"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="listSolutions" href="@routes.TournamentController.allSolutions"><i class="fa fa-fw"></i>Посмотреть все решения</a>
+					</li>
+					@if(activeLink == "search"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="search" href="@routes.SearchController.search"><i class="fa fa-fw"></i>Поиск партий</a>
 					</li>}(loggedUser)
-					<li>
+					@if(activeLink == "tournamentsList"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="tournamentsList" href="@routes.TournamentController.list("created")"><i class="fa fa-fw"></i>Список турниров</a>
+					</li>
+					@if(activeLink == "tournamentJoin"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
 						<a id="tournamentJoin" href="@routes.TournamentController.joinPage"><i class="fa fa-fw"></i>Присоединиться к турниру</a>
+					</li>
+					li<>@if(activeLink == "bestPlayer"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="bestPlayer" href="@routes.TournamentController.bestPlayer"><i class="fa fa-fw"></i>Лучшие угадывальщики</a>
+					</li>
+					@if(activeLink == "playerStat"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="playerStat" href="@routes.TournamentController.statFor"><i class="fa fa-fw"></i>Статистика угадывания по игроку</a>
+					</li>
+					@if(activeLink == "gameStat"){
+				        <li class="active">
+				    } else {
+				        <li>
+				    }
+						<a id="gameStat" href="@routes.TournamentController.statForId"><i class="fa fa-fw"></i>Статистика угадываний по партиям</a>
 					</li>
 				</ul>
 			</div>
 
 		</nav>
-		<div id="page-wrapper">
+		    <div id="page-wrapper">
+			    @content
+		    </div>
+		</div>
+		} else {
+		<div id="page-wrapper" style="overflow:hidden;width:90%; margin-left:5%;margin-right:5%;">
 			@content
 		</div>
-	</div>
+		}
+
 </body>
 </html>

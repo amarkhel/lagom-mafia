@@ -1,0 +1,57 @@
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.tournament.api.Util
+@import controllers.routes
+@(tour: Tournament)(implicit messages: Messages)
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <center><span><b style="color:green">@tour.name</b></span> Создатель - <b style="color:green">@tour.creator </b></center>
+    </div>
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Очки</th>
+                    <th>Макс</th>
+                    <th>Мин</th>
+                    <th>Среднее за игру</th>
+                    <th>Всего угадано мафов</th>
+                </tr>
+                </thead>
+                <tbody>
+                @tour.stat.sortBy(_._3).reverse.map{ s =>
+                <tr class="success">
+                    <td><b>@s._1</b></td>
+                    <td>@Util.trimD(s._3)</td>
+                    <td>@Util.trimD(s._4)</td>
+                    <td>@Util.trimD(s._5)</td>
+                    <td>@Util.trimD(s._6)</td>
+                    <td>@s._7.size</td>
+                </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="panel-group" id='accordion_finished_@tour.name.replaceAll("\\s", "").hashCode'>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <a data-toggle="collapse" data-parent='#accordion_finished_@tour.name.replaceAll("\\s", "").hashCode' href='#collapse_finished_@tour.name.replaceAll("\\s", "").hashCode' aria-expanded="false" class="collapsed">
+            <center>
+                <span><b style="color:green">Посмотреть статистику по играм</b></span>
+            </center>
+            </a>
+        </div>
+        <div id='collapse_finished_@tour.name.replaceAll("\\s", "").hashCode' class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+            <div class="panel-body">
+                <div class="panel">
+                    @tour.games.map { game =>
+                        @views.html.tournament.gameResult(tour, game)
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

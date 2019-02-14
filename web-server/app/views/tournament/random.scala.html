@@ -1,0 +1,18 @@
+@import controllers.RandomForm
+@import b3.vertical.fieldConstructor
+@import com.amarkhel.user.api.User
+@import com.amarkhel.tournament.api.Util
+@(randomForm:Form[RandomForm], loggedUser:Option[User])(implicit request:RequestHeader, messages: Messages)
+
+@views.html.layout.logged(title = "")(loggedUser, "gameRandom") {
+@tags.alertFromRequest(request, "error")
+@randomForm.globalError.map { error => @tags.alert(error.message, "error")}
+@b3.formCSRF(routes.GameController.randomGame) {
+<fieldset>
+    <legend>Выберите улицу и количество игроков</legend>
+    @b3.select( randomForm("location"), options = Util.locations, '_label -> "Улица" )
+    @b3.text( randomForm("countPlayers"), '_hiddenLabel -> "Число игроков", 'placeholder -> "Число игроков", 'autofocus -> true )
+    @b3.submit('class -> "btn btn-primary btn-block"){ Загрузить }
+</fieldset>
+}
+}

@@ -35,16 +35,17 @@ object Operation extends Enum[Operation] {
   case object LE        extends Operation("<=")
   case object GE        extends Operation(">=")
   case object IN        extends Operation("in")
+  case object BETWEEN   extends Operation("between")
 }
 
-sealed trait Value
+sealed abstract class Value(entryName:Any) extends EnumEntry
 
-case class IntValue(value:Int) extends Value
-case class StringValue(value:String) extends Value
-case class DoubleValue(value:Double) extends Value
-case class ListIntValue(value:List[Int]) extends Value
-case class ListStrValue(value:List[String]) extends Value
-case class ListDoubleValue(value:List[Double]) extends Value
+case class IntValue(value:Int) extends Value(value)
+case class StringValue(value:String) extends Value(value)
+case class DoubleValue(value:Double) extends Value(value)
+case class ListIntValue(value:List[Int]) extends Value(value)
+case class ListStrValue(value:List[String]) extends Value(value)
+case class ListDoubleValue(value:List[Double]) extends Value(value)
 
 object Value {
 

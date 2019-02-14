@@ -12,7 +12,7 @@ import org.scalatest.{BeforeAndAfterAll, Inside, Matchers, WordSpec}
 
 class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with Inside {
 
-  private val game = Game(1, List(GameStarted(1, Location.OZHA, LocalDateTime.of(2014, 2, 2, 12, 22, 23).toString,
+  private val game = Game(1, List(GameStarted(Location.OZHA, LocalDateTime.of(2014, 2, 2, 12, 22, 23).toString,
     List("Andrey", "Vika"), 0), GameCompleted("Вся мафия убита", 362)), OK, List(Gamer("Andrey", Role.CITIZEN),Gamer("Vika", Role.MAFIA)), 3)
 
   private val system = ActorSystem("GameEntitySpec", JsonSerializerRegistry.actorSystemSetupFor(SerializerRegistry))

@@ -1,0 +1,28 @@
+@import controllers.Tournaments
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.user.api.User
+@(tournament: Option[Tournament], loggedUser:Option[User])(implicit request:RequestHeader, messages: Messages)
+
+@views.html.layout.logged(title = s"Текущая игра в турнире ${tournament.map(_.name).getOrElse("")}")(loggedUser, "tournamentsList") {
+@tags.alertFromRequest(request, "error")
+@if(!tournament.isEmpty){
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <center>Текущая игра в турнире <b>@tournament.get.name</b></center>
+        </div>
+        <div class="panel-body">
+            <div class="tab-content">
+                <div class="tab-pane fade in active" id="created">
+                    <p>До окончания игры осталось <b>@tournament.get.gameInProgress.get.timeToEnd</b></p>
+                    @views.html.layout.isAdmin{
+                    <p><b>Видно только админам: </b>Номер партии - <b><a href="https://mafiaonline.ru/log/@tournament.get.gameInProgress.get.id">@tournament.get.gameInProgress.get.id</a></b>.  Мафия - <b>@tournament.get.gameInProgress.get.mafias.mkString(",")</b>. Число раундов - <b>@tournament.get.gameInProgress.get.countRounds</b></p>
+                    }(loggedUser)
+                    @tournament.get.currentGameState.get.map { state =>
+                        @userState(state, tournament.get.gameInProgress.get)(messages, loggedUser)
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+}

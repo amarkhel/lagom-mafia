@@ -1,0 +1,44 @@
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.tournament.api.Util
+@import com.amarkhel.tournament.api.GameDescription
+@import controllers.routes
+@(tour:Tournament, game: GameDescription)(implicit messages: Messages)
+<div class="col-sm-6" style="padding:10px;">
+    <div class="card border-danger">
+        <div class="card-header" style="padding-bottom:5px;">
+            <center>Игра №
+                <a target="_blank" href="http://mafiaonline.ru/log/@game.id">
+                    <b style="color:red">@game.id</b>
+                </a>
+            </center>
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush ">
+                <li class="list-group-item"><b style="color:green">@game.location</b></li>
+                <li class="list-group-item">Игроков - <b style="color:green">@game.countPlayers</b></li>
+                <li class="list-group-item">Раундов - <b style="color:green">@game.countRounds</b></li>
+                <li class="list-group-item">Мафия - <b style="color:red">@game.mafias.mkString(",")</b></li>
+            </ul>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Игрок</th>
+                        <th>Выбрал</th>
+                        <th>Набрал очков</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @tour.players.map { p =>
+                    <tr class="success">
+                        <td><b>@p.name</b></td>
+                        <td>@p.getById(game.id).get.mafia.map(e => s"${e._1}(${e._2._1} ход)").mkString(",")</td>
+                        <td>@Util.trimD(Util.calculatePoints((p.name, game, p.getById(game.id).get.mafia))._2)</td>
+                    </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

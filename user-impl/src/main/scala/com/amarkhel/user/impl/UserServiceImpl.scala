@@ -16,7 +16,16 @@ import scala.concurrent.duration._
 class UserServiceImpl(registry: PersistentEntityRegistry, system: ActorSystem)(implicit ec: ExecutionContext, mat: Materializer) extends UserService {
   implicit val timeout = 600 seconds
   private val currentIdsQuery = PersistenceQuery(system).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
-  val superadmins = List(User("amarkhel", "andreymarkhel@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", true), User("apaapaapa", "upijcy@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", true), User("test", "upijcy1@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false), User("test2", "upijcy3@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false), User("test3", "upijcy4@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false))
+  val superadmins = List(
+    User("amarkhel", "andreymarkhel@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", true),
+    User("apaapaapa", "upijcy@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", true),
+    User("test", "upijcy1@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false),
+    User("test2", "upijcy3@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false),
+    User("test3", "upijcy4@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false),
+    User("puf", "upijcy5@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false),
+    User("never", "upijcy6@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false),
+    User("unstop", "upijcy7@gmail.com", true, "$2a$10$FIqoqNS2aa76gsXHppy2WuiA6SJaWLYxYVNZSmNDqRd38v/sl3.m.", false)
+  )
     superadmins.foreach( s => {
       val a: Future[Option[User]] = (for {
         check <- checkIfEmailExist(s.email).invoke() if(!check)

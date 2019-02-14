@@ -2,7 +2,7 @@
 @import com.amarkhel.user.api.User
 @import controllers.routes
 @(tournaments: Seq[Tournament], user:Option[User])(implicit requestHeader:RequestHeader, messages: Messages)
-@views.html.layout.logged("Создать турнир")(user) {
+@views.html.layout.logged("Создать турнир")(user, "tournamentJoin") {
     @tournaments.map { tour =>
         <div class="panel-group" id="accordion">
             <div class="panel panel-default">
@@ -14,10 +14,14 @@
                                     <span><b style="color:green">@tour.name</b></span>
                                     Участников - <b style="color:green">@tour.countPlayers</b>
                                     Максимальное время на игру - <b style="color:green">@tour.gameExpirationTime ч.</b>
-                                    Присоединилось - <b style="color:green">@tour.countJoinedPlayers </b>
+                                    Присоединилось - <b style="color:green">@tour.countJoinedPlayers (@tour.playersString)</b>
+                                    @if(tour.joined(user.get.name) || user.get.isAdmin){
+
+                                    } else {
                                     <span>
                                         <a href="@routes.TournamentController.join(tour.name)">Присоединиться</a>
-                                    </span>
+                                      </span>
+                                    }
                                 </center>
                             </li>
                         </ul>

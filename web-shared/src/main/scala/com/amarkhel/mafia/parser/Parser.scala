@@ -13,7 +13,7 @@ object Parser {
 
   def defaultEvents(gameSource:GameContent, time:LocalDateTime) = {
     List(
-      GameStarted(gameSource.id, gameSource.location, time.toString, gameSource.players.map(_.name), 0),
+      GameStarted(gameSource.location, time.toString, gameSource.players.map(_.name), 0),
       RoundStarted(RoundType.INITIAL, 0)
     )
   }
@@ -108,6 +108,7 @@ object Parser {
     """\[ОМОНОВЕЦ\] [\s\S]*<b>Сержант получает повышение.[\s\S]*Мои поздравления, господин комиссар.[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Маньяк проспал свой ход[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Жертвой маньяка никто не стал[\s\S]*""",
+    """\[ОМОНОВЕЦ\] [\s\S]*<b> </b>[\s\S]*""",
     """[\s\S]*<b> убит[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Комиссар закончил своё расследование.[\s\S]*""",
     """\[ОМОНОВЕЦ\] [\s\S]*Мафия не может поднять руку на дитя босса.[\s\S]*""",
@@ -131,6 +132,10 @@ object Parser {
           EarnedMaf(l.head, l.last.toDouble, t)
         }),
       """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-city">)(.+?)нанёс удар по репутации жителя города (.+) (.+?)(?:</b>|</span>)""".r ->
+        event((_, list, t) => SumrakVoted(list.head, list(1), t, list.last.replace("−", "").toInt)),
+      """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-positive">)Врач (.+?)лечит (.+) (.+?)(?:</b>|</span>)""".r ->
+        event((_, list, t) => SumrakVoted(list.head, list(1), t, list.last.replace("−", "").toInt)),
+      """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-man">)Маньяк (.+?)наносит удар по жизни (.+) (.+?)(?:</b>|</span>)""".r ->
         event((_, list, t) => SumrakVoted(list.head, list(1), t, list.last.replace("−", "").toInt)),
       """\[ОМОНОВЕЦ\][\s\S]*(?:<b style="text-decoration: underline;">|<span class="move move-maf">)Мафиози (.+?)наносит удар по жизни (.+) (.+?)(?:</b>|</span>)""".r ->
         event((_, list, t) => SumrakVoted(list.head, list(1), t, list.last.replace("−", "").toInt)),

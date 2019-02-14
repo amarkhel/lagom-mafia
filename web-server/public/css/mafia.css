@@ -406,3 +406,6 @@ body {
     font-weight:bold;
 }
 
+.modal-header .close {
+  display:none;
+}

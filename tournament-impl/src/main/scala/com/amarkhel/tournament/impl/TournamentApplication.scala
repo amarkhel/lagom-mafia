@@ -11,16 +11,18 @@ import play.api.libs.ws.ahc.AhcWSComponents
 import scala.concurrent.ExecutionContext
 
 trait TournamentComponents extends LagomServerComponents with CassandraPersistenceComponents {
-  implicit val mat = materializer
+  implicit def mat = materializer
   implicit def executionContext: ExecutionContext
+  val solutionService = wire[SolutionServiceImpl]
   override lazy val lagomServer = serverFor[TournamentService](wire[TournamentServiceImpl])
   override lazy val jsonSerializerRegistry = TournamentSerializerRegistry
   persistentEntityRegistry.register(wire[TournamentEntity])
+  persistentEntityRegistry.register(wire[SolutionEntity])
   readSide.register(wire[Processor])
 }
 
 abstract class TournamentApplication(context: LagomApplicationContext) extends LagomApplication(context) with AhcWSComponents with TournamentComponents {
-  implicit override val mat = materializer
+  implicit override def mat = materializer
   val service = serviceClient.implement[TournamentService]
   wire[Scheduler]
 }

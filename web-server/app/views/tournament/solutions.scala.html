@@ -1,0 +1,35 @@
+@import controllers.Tournaments
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.tournament.api.SolutionResult
+@import com.amarkhel.user.api.User
+@import com.amarkhel.tournament.api.Util
+@(list: Seq[SolutionResult], loggedUser:Option[User])(implicit request:RequestHeader, messages: Messages)
+
+@views.html.layout.logged(title = "Список игр")(loggedUser, "listSolutions") {
+@tags.alertFromRequest(request, "error")
+
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Номер партии</th>
+            <th>Пробовал решить</th>
+            <th>Дата решения</th>
+            <th>Выбор игрока</th>
+            <th>Набрал очков</th>
+        </tr>
+        </thead>
+        <tbody>
+        @list.map { game =>
+        <tr class="success">
+            <td><b>@game.id</b></td>
+            <td>@game.name</td>
+            <td>@Util.formatD(game.when)</td>
+            <td>@Html.apply(game.choices.map(ch => s"<b>${ch.name}</b> выбран(${if(ch.correct) "<b style='color:blue;'>Правильно</b>" else "<b style='color:red;'>Неправильно</b>"}) на <b>${ch.round}</b> ходу, через <b>${Util.formatSeconds(ch.when)}</b> секунд после начала").mkString(", "))</td>
+            <td>@Util.trimD(game.points)</td>
+        </tr>
+        }
+        </tbody>
+    </table>
+</div>
+}

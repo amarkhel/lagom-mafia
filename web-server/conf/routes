@@ -1,18 +1,35 @@
 
 GET     /                             controllers.Application.index
 
+GET     /search                       controllers.SearchController.search
+GET     /searchGames                  controllers.SearchController.searchGames
+
 GET     /index                        controllers.GameController.index
 GET     /game                         controllers.GameController.game
 GET     /chat/ws/:username            controllers.GameController.chat(username: String)
+GET     /heartbeat/ws/:username       controllers.GameController.heartbeat(username: String)
+POST    /randomGame                   controllers.GameController.randomGame
+GET     /random                       controllers.GameController.random
 
+GET     /startTournament/:name        controllers.TournamentController.startTournament(name:String)
+GET     /removeUser/:name/:user       controllers.TournamentController.removeUser(name:String, user:String)
+GET     /statFor                      controllers.TournamentController.statFor
+GET     /statForId                    controllers.TournamentController.statForId
+GET     /statForPlayer                controllers.TournamentController.statForPlayer
+GET     /statForGame                  controllers.TournamentController.statForGame
+GET     /bestPlayer                   controllers.TournamentController.bestPlayer
+GET     /solutions                    controllers.TournamentController.allSolutions
+GET     /result/:name/:id             controllers.TournamentController.result(name:String, id:Int)
+GET     /tournamentState/:name        controllers.TournamentController.tournamentState(name:String)
+GET     /currentState/:name           controllers.TournamentController.currentState(name:String)
 GET     /newTournament                controllers.TournamentController.index
 POST    /createTournament             controllers.TournamentController.create
-GET     /listOfTournaments            controllers.TournamentController.list
+GET     /listOfTournaments/:tab       controllers.TournamentController.list(tab:String)
 GET     /deleteTournament/:name       controllers.TournamentController.delete(name:String)
 GET     /editTournament/:name         controllers.TournamentController.edit(name:String)
 GET     /joinTournament/:name         controllers.TournamentController.join(name:String)
 GET     /join                         controllers.TournamentController.joinPage
-GET     /startGame/:name/:id                controllers.TournamentController.startGame(name:String, id:Int)
+GET     /startGame/:name/:id          controllers.TournamentController.startGame(name:String, id:Int)
 
 # Authentication pages
 GET		/signup							controllers.Auth.startSignUp

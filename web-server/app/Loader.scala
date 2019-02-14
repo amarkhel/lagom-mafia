@@ -9,7 +9,7 @@ import com.lightbend.lagom.scaladsl.client.LagomServiceClientComponents
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.softwaremill.macwire._
 import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
-import controllers.{Application, AssetsComponents, Auth, GameController, MyAssets, TournamentController}
+import controllers.{Application, SearchController, AssetsComponents, Auth, GameController, MyAssets, TournamentController}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.i18n.I18nComponents
@@ -43,6 +43,7 @@ abstract class Web(context: Context) extends BuiltInComponentsFromContext(contex
   override implicit lazy val executionContext: ExecutionContext = actorSystem.dispatcher
   implicit lazy val appActorSystem: ActorSystem = actorSystem
   lazy val game = wire[GameController]
+  lazy val sear = wire[SearchController]
   lazy val tour = wire[TournamentController]
   lazy val ass = wire[MyAssets]
   lazy val auth = wire[Auth]

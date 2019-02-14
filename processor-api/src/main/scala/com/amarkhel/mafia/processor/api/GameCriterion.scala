@@ -4,7 +4,7 @@ import com.amarkhel.mafia.common.Game
 import enumeratum._
 import play.api.libs.json._
 
-sealed abstract class GameCriterion(val tableName: String, val extractor:Game => Any, val columnType:String) extends EnumEntry
+sealed abstract class GameCriterion(override val entryName:String, val tableName: String, val extractor:Game => Any, val columnType:String) extends EnumEntry
 
 case object GameCriterion extends Enum[GameCriterion] {
   val values = findValues
@@ -15,14 +15,14 @@ case object GameCriterion extends Enum[GameCriterion] {
   implicit val criterionWrites: Writes[GameCriterion] = Writes { loc =>
     JsString(loc.entryName)
   }
-  case object LocationCriterion extends GameCriterion("location", _.location.name, "text")
-  case object ResultCriterion extends GameCriterion("result", _.result.descr, "text")
-  case object TournamentResultCriterion extends GameCriterion("tournamentResult", _.tournamentResult.descr, "text")
-  case object CountPlayersCriterion extends GameCriterion("countPlayers", _.playersSize, "int")
-  case object CountRoundsCriterion extends GameCriterion("countRounds", _.countRounds, "int")
-  case object PlayersCriterion extends GameCriterion("players", _.toPlayersString, "text")
-  case object YearCriterion extends GameCriterion("year",_.day.year, "int")
-  case object MonthCriterion extends GameCriterion("month", _.day.month, "int")
-  case object DayCriterion extends GameCriterion("day", _.day.day, "int")
-  case object AverageMessagesPerRoundCriterion extends GameCriterion("averageMessages", _.averageMessagesPerRound, "double")
+  case object LocationCriterion extends GameCriterion("Улица", "location", _.location.name, "text")
+  case object ResultCriterion extends GameCriterion("Результат","result", _.result.descr, "text")
+  case object TournamentResultCriterion extends GameCriterion("Результат учитывая омон","tournamentResult", _.tournamentResult.descr, "text")
+  case object CountPlayersCriterion extends GameCriterion("Количество игроков","countPlayers", _.playersSize, "int")
+  case object CountRoundsCriterion extends GameCriterion("Количество раундов","countRounds", _.countRounds, "int")
+  case object PlayersCriterion extends GameCriterion("Игроки","players", _.toPlayersString, "text")
+  case object YearCriterion extends GameCriterion("Год","year",_.day.year, "int")
+  case object MonthCriterion extends GameCriterion("Месяц","month", _.day.month, "int")
+  case object DayCriterion extends GameCriterion("День","day", _.day.day, "int")
+  case object AverageMessagesPerRoundCriterion extends GameCriterion("Среднее количество сообщений за игру","averageMessages", _.averageMessagesPerRound, "double")
 }

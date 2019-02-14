@@ -21,6 +21,7 @@ class MafiaServiceIntegrationTest extends AsyncWordSpec with Matchers with Befor
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
     new LagomApplication(ctx) with MafiaComponentsCommon with LocalServiceLocator with AhcWSComponents with TestTopicComponents
   }
+  private val day = Day(2014, 2, 2)
   //import scala.concurrent.ExecutionContext.Implicits.global
   val service = server.serviceClient.implement[MafiaService]
 
@@ -39,7 +40,7 @@ class MafiaServiceIntegrationTest extends AsyncWordSpec with Matchers with Befor
     //should skip 2166203
     "should load game for given id" in {
       for {
-        game <- service.loadGame(3880967, -1).invoke()
+        game <- service.loadGame(4054211, -1).invoke()
       } yield {
         //game.events.foreach(println)
         game.id should be(2668067)
@@ -198,8 +199,8 @@ class MafiaServiceIntegrationTest extends AsyncWordSpec with Matchers with Befor
   }
 
   private def statusShouldBeInitial(status: GetStatusCommand.ReplyType) = {
-    status.year shouldBe (ExtractorEntity.firstDay.year)
-    status.month shouldBe (ExtractorEntity.firstDay.month)
-    status.day shouldBe (ExtractorEntity.firstDay.day)
+    status.year shouldBe (day.year)
+    status.month shouldBe (day.month)
+    status.day shouldBe (day.day)
   }
 }

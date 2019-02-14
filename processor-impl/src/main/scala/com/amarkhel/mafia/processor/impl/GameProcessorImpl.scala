@@ -7,7 +7,7 @@ import akka.stream.scaladsl.Sink.{last, seq}
 import akka.stream.scaladsl.Source
 import com.amarkhel.mafia.common._
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, PersistentEntityRegistry}
-import com.amarkhel.mafia.processor.api.{GameProcessor, GameSummary, Operation, SearchCriterion}
+import com.amarkhel.mafia.processor.api._
 import com.datastax.driver.core.Row
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
@@ -51,31 +51,33 @@ class GameProcessorImpl(registry: PersistentEntityRegistry, session:CassandraSes
       c <- criterion.list
     } yield fetchIds(c))
     val matched: Future[List[Int]] = ids.map(l =>{
-      l.foldLeft(List.empty[Int])((a,b) => a.intersect(b))
+      l.reduce((a,b) => a.intersect(b))
     })
     matched.map(m => {fetchGames(m).map(_.toList)}).flatten
   }
 
   private def mapVal(value: Any):String = {
     value match {
-      case i:Int => i.toString
-      case str:String => s"'$str'"
-      case d:Double => d.toString
-      case l:List[_] => s"(${l.map(a => mapVal(a)).mkString(",")})"
+      case i:IntValue => i.value.toString
+      case str:StringValue => s"'${str.value}'"
+      case d:DoubleValue => d.value.toString
+      case l:ListIntValue => s"(${l.value.map(a => mapVal(a)).mkString(",")})"
+      case l:ListStrValue => s"(${l.value.map(a => mapVal(a)).mkString(",")})"
+      case l:ListDoubleValue => s"(${l.value.map(a => mapVal(a)).mkString(",")})"
     }
   }
 
   private def fetchGames(list:List[Int]) = {
-    val id = list.map(s => s"'$s'").mkString(",")
-    val result = Try(session.select("SELECT id, year, month, day, countP, countR, result, tournamentResult, location, players FROM gameSummary WHERE id in (?)", id)
+    val id = list.map(s => s"$s").mkString(",")
+    val result = Try(session.select(s"SELECT id, year, month, day, countP, countR, result, tournamentResult, location, players FROM gameSummary WHERE id in ($id)")
       .map(row => {
         def int(name:String) = row.getInt(name)
         def players(str:String) = {
           val ps = str.split(",")
           ps.map(p => {
             val temp = p.split(";")
-            val name = temp(0)
-            val role = Role.get(temp(1))
+            val name = temp(0).replaceAll("name-", "")
+            val role = Role.get(temp(1).replaceAll("role-List\\(", "").replaceAll("\\)", ""))
             (name, role)
           })
         }
@@ -88,7 +90,7 @@ class GameProcessorImpl(registry: PersistentEntityRegistry, session:CassandraSes
   }
 
   private def fetchIds(s:SearchCriterion) = {
-    val str = s"select id from ${s.crit.tableName}_criterion where ${s.crit.tableName} ${s.operation.entryName} ${mapVal(s.value)}}"
+    val str = s"select id from ${s.crit.tableName}_criterion where ${s.crit.tableName} ${s.operation.entryName} ${mapVal(s.value)} ALLOW FILTERING"
     session.select(str).runWith(seq).map{
       row => row.map(a => a.getInt("id")).toList
     }

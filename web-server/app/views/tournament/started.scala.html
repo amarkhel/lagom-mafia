@@ -1,26 +1,37 @@
 @import com.amarkhel.tournament.api.Tournament
 @import controllers.routes
-@(tour: Tournament)(implicit messages: Messages)
-<div class="panel-group" id="accordion">
+@import com.amarkhel.user.api.User
+@(tour: Tournament)(implicit loggedUser:Option[User], messages: Messages)
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Название</th>
+            <th>Число участников</th>
+            <th>Присоединилось</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="success">
+            <td><b>@tour.name</b></td>
+            <td>@tour.countPlayers</td>
+            <td>@tour.playersString</td>
+            <td><a href="@routes.TournamentController.tournamentState(tour.name)">Таблица набранных очков(текущая)</a></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<div class="panel-group" id='accordion_current_@tour.name.replaceAll("\\s", "").hashCode'>
     <div class="panel panel-default">
         <div class="panel-heading">
             <h4 class="panel-title">
-                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="false" class="collapsed">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <center>
-                                <span><b style="color:green">@tour.name</b></span>
-                                Участников - <b style="color:green">@tour.countPlayers</b>
-                                Максимальное время на игру - <b style="color:green">@tour.gameExpirationTime ч.</b>
-                                Присоединились - <b style="color:green">@tour.playersString </b>
-                            </span>
-                            </center>
-                        </li>
-                    </ul>
+                <a data-toggle="collapse" data-parent='#accordion_current_@tour.name.replaceAll("\\s", "").hashCode' href='#collapse_current_@tour.name.replaceAll("\\s", "").hashCode' aria-expanded="false" class="collapsed">
+                    <center>Посмотреть подробнее игры</center>
                 </a>
             </h4>
         </div>
-        <div id="collapseOne" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+        <div id='collapse_current_@tour.name.replaceAll("\\s", "").hashCode' class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
             <div class="panel-body">
                 <div class="panel">
                     @tour.games.map { game =>
@@ -28,23 +39,35 @@
                         <div class="card border-danger">
                             <div class="card-header" style="padding-bottom:5px;">
                                 <center>Игра №
+                                    @views.html.layout.isAdminOrElse{
                                     <a target="_blank" href="http://mafiaonline.ru/log/@game.id">
                                         <b style="color:red">@game.id</b>
                                     </a>
+                                    }{
+                                      <b>Номер партии скрыт</b>
+                                    }(loggedUser)
                                 </center>
                             </div>
                             <div class="card-body">
                                 <ul class="list-group list-group-flush ">
                                     <li class="list-group-item"><b style="color:green">@game.location</b></li>
                                     <li class="list-group-item">Игроков - <b style="color:green">@game.countPlayers</b></li>
+                                    @views.html.layout.isAdmin{
                                     <li class="list-group-item">Раундов - <b style="color:green">@game.countRounds</b></li>
                                     <li class="list-group-item">Мафия - <b style="color:red">@game.mafias.mkString(",")</b></li>
+                                    }(loggedUser)
                                     @if(game.finished) {
-                                        <li class="list-group-item">Завершена - <b style="color:red">Результат</b></li>
+                                        <li class="list-group-item">Завершена - <b style="color:red">
+                                            <a href="@routes.TournamentController.result(tour.name, game.id)">Результат</a>
+                                        </b></li>
                                     } else if(game.inProgress){
-                                        <li class="list-group-item">В прогрессе - <b style="color:red">Посмотреть</b></li>
+                                    <li class="list-group-item">В прогрессе - <a href="@routes.TournamentController.currentState(tour.name)"><b style="color:red">Посмотреть</b></a></li>
+                                    } else if(tour.hasGameInProgress){
+
                                     } else {
+                                    @views.html.layout.isAdmin{
                                         <li class="list-group-item"><b style="color:red"><a href="@routes.TournamentController.startGame(tour.name, game.id)">Стартовать</a></b></li>
+                                    }(loggedUser)
                                     }
                                 </ul>
                             </div>

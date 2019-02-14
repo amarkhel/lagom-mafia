@@ -1,68 +1,183 @@
 package com.amarkhel.tournament.impl
 
+import java.util.Date
+
 import akka.Done
 import akka.stream.Materializer
-import com.amarkhel.tournament.api.Tournament
-import com.datastax.driver.core.{BoundStatement, PreparedStatement}
-import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, ReadSideProcessor}
+import com.amarkhel.tournament.api.{Choice, GameDescription, Solution, Util}
+import com.datastax.driver.core._
 import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, CassandraSession}
+import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, ReadSideProcessor}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 class Processor(readSide: CassandraReadSide, session: CassandraSession)(implicit mat:Materializer, ec: ExecutionContext)
-  extends ReadSideProcessor[TournamentEvent] {
+  extends ReadSideProcessor[SolutionEvent] {
 
   private var insertStatement: PreparedStatement = _
-  //private var deleteStatement: PreparedStatement = _
-  //private var updateStatement: PreparedStatement = _
 
   def buildHandler = {
-    readSide.builder[TournamentEvent]("tournamentOffset")
+    readSide.builder[SolutionEvent]("solutionOffset")
       .setGlobalPrepare(createTable)
       .setPrepare { _ => prepareStatements()}
-      .setEventHandler[TournamentCreated](tournamentCreated)
-      //.setEventHandler[TournamentDeleted](tournamentDeleted)
-      //.setEventHandler[TournamentUpdated](tournamentUpdated)
+      .setEventHandler[SolutionPosted](solutionPosted)
       .build()
   }
 
   private def createTable() = {
     for {
-      _ <- session.executeCreateTable("""
-          CREATE TABLE IF NOT EXISTS tournaments (
+      /*_ <- session.executeWrite("""
+          DROP TYPE IF EXISTS choice
+      """)
+      _ <- session.executeWrite("""
+          CREATE TYPE choice (
             name text,
-            countPlayers int,
-            PRIMARY KEY (name)
+            round int,
+            correct boolean,
+            when int
           )
+      """)*/
+      _ <- session.executeCreateTable("""
+          CREATE TABLE IF NOT EXISTS solutions (
+            id int,
+            name text,
+            when timestamp,
+            choices list<text>,
+            points double,
+            PRIMARY KEY (id, name, when)
+          ) WITH CLUSTERING ORDER BY (name DESC, when DESC)
       """)
     } yield Done
   }
 
   private def prepareStatements() = {
+/*    session.underlying().value.get.get.getCluster.getConfiguration.getCodecRegistry.register(ChoiceCodec)
+    session.underlying().value.get.get.getCluster.getConfiguration.getCodecRegistry.register(ListCodec)*/
     for {
-      insert <- session.prepare("INSERT INTO tournaments(countPlayers, name) VALUES (?, ?)")
-      //update <- session.prepare("UPDATE tournaments SET countPlayers=? where name = ?")
-      //delete <- session.prepare("DELETE FROM tournaments where name = ?")
+      insert <- session.prepare("INSERT INTO solutions(id, name, when, points, choices) VALUES (?, ?, ?, ?, ?)")
     } yield {
       insertStatement = insert
-      //deleteStatement = delete
-      //updateStatement = update
       Done
     }
   }
 
-  private def tournamentCreated(event: EventStreamElement[TournamentCreated]) = list2future(bind(insertStatement, event.event.tournament))
-
-  //private def tournamentDeleted(event: EventStreamElement[TournamentDeleted]) = list2future(bind2(deleteStatement, event.event.name))
-
-  //private def tournamentUpdated(event: EventStreamElement[TournamentUpdated]) = list2future(bind(updateStatement, event.event.tournament))
-
-  private def bind(statement:PreparedStatement, tournament:Tournament) = statement.bind(toI(tournament.countPlayers), tournament.name)
+  private def solutionPosted(event: EventStreamElement[SolutionPosted]) = list2future(bind(insertStatement, event.event.game, event.event.solution, event.event.player))
+  private def bind(statement:PreparedStatement, game:GameDescription, solution:Solution, player:String) = {
+    val list = solution.mafia.map(s => {
+      Choice(s._1, s._2._1, game.mafias.contains(s._1), s._2._2).asString
+    }).toList.asJava
+    statement.bind(toI(game.id), player, new Date(), new java.lang.Double(Util.calculatePoints(player, game, solution.mafia)._2), list)
+  }
 
   private def toI(i:Int) = new java.lang.Integer(i)
-  //private def bind2(statement:PreparedStatement, tournament:String) = statement.bind(tournament)
 
-  private def list2future(statements:BoundStatement*) = Future.successful(statements.toList)
+  private def list2future(statement:BoundStatement) = Future.successful(List(statement))
 
-  def aggregateTags = TournamentEvent.Tag.allTags
+  def aggregateTags = SolutionEvent.Tag.allTags
 }
+
+/*
+object ChoiceCodec extends TypeCodec[Choice](DataType.custom("tournament.choice"), TypeToken.of(classOf[Choice]).wrap()) {
+
+  override def serialize(value: Choice, protocolVersion: ProtocolVersion): ByteBuffer =
+    ByteBuffer.allocate(12 + value.name.getBytes.size)
+      .put(value.name.getBytes, 0, value.name.getBytes.size)
+      .putInt(value.name.getBytes.size, value.round)
+      .putInt(value.name.getBytes.size + 4, value.when)
+      .putInt(value.name.getBytes.size + 8, if(value.correct) 1 else 0)
+
+  override def deserialize(bytes: ByteBuffer, protocolVersion: ProtocolVersion): Choice = {
+    val count = bytes.remaining
+    val length = count - 12
+    val arr = new Array[Byte](length)
+    bytes.get(arr)
+    val round = bytes.getInt(bytes.position)
+    val when = bytes.getInt(bytes.position)
+    val correct = if(bytes.getInt(bytes.position) == 1) true else false
+    val name = arr.map(_.toChar).mkString
+    Choice(name, round, correct, when)
+  }
+
+  override def format(value: Choice): String = value.toString
+
+  override def parse(value: String): Choice = {
+    try {
+      val arr = value.replaceAll("Choice(", "").replaceAll(")", "").split(",")
+      Choice(arr(0), arr(1).toInt, arr(2).toBoolean, arr(3).toInt)
+    }
+    catch {
+      case e: NumberFormatException =>
+        throw new InvalidTypeException( s"""Cannot parse 32-bits integer value from "$value"""", e)
+    }
+  }
+  override def accepts(value: AnyRef): Boolean = value match {
+    case Choice(_, _, _, _) => true
+    case _ => false
+  }
+  def acceptsValue(value: Any): Boolean = value match {
+    case Choice(_, _, _, _) => true
+    case _ => false
+  }
+  override def accepts(value: DataType): Boolean = value match {
+    case _ => true
+  }
+}
+import java.nio.ByteBuffer
+
+import com.datastax.driver.core.CodecUtils.{readSize, readValue}
+import com.datastax.driver.core._
+import com.datastax.driver.core.exceptions.InvalidTypeException
+
+object ListCodec extends TypeCodec[java.util.List[Choice]](
+  DataType.list(ChoiceCodec.getCqlType),
+  TypeTokens.listOf(ChoiceCodec.getJavaType).wrap())
+{
+
+  override def serialize(value: java.util.List[Choice], protocolVersion: ProtocolVersion): ByteBuffer = {
+    if (value == null) return null
+    val bbs: List[ByteBuffer] = (for (elt <- value.asScala) yield {
+      if (elt == null) throw new NullPointerException("List elements cannot be null")
+      ChoiceCodec.serialize(elt, protocolVersion)
+    }).toList
+    CodecUtils.pack(bbs.toArray, value.size, protocolVersion)
+  }
+
+  override def deserialize(bytes: ByteBuffer, protocolVersion: ProtocolVersion): java.util.List[Choice] = {
+    if (bytes == null || bytes.remaining == 0) return new java.util.ArrayList[Choice]()
+    val input: ByteBuffer = bytes.duplicate
+    val size: Int = readSize(input, protocolVersion)
+    (for (_ <- 1 to size) yield ChoiceCodec.deserialize(readValue(input, protocolVersion), protocolVersion)).toList.asJava
+  }
+
+  override def format(value: java.util.List[Choice]): String = {
+    if (value == null) "NULL" else '[' + value.asScala.map(e => ChoiceCodec.format(e)).mkString(",") + ']'
+  }
+
+  override def parse(value: String): java.util.List[Choice] = {
+    if (value == null || value.isEmpty || value.equalsIgnoreCase("NULL")) return new java.util.ArrayList[Choice]()
+    var idx: Int = ParseUtils.skipSpaces(value, 0)
+    if (value.charAt(idx) != '[') throw new InvalidTypeException( s"""Cannot parse list value from "$value", at character $idx expecting '[' but got '${value.charAt(idx)}'""")
+    idx = ParseUtils.skipSpaces(value, idx + 1)
+    val seq = List.newBuilder[Choice]
+    if (value.charAt(idx) == ']') return seq.result.asJava
+    while (idx < value.length) {
+      val n = ParseUtils.skipCQLValue(value, idx)
+      seq += ChoiceCodec.parse(value.substring(idx, n))
+      idx = n
+      idx = ParseUtils.skipSpaces(value, idx)
+      if (value.charAt(idx) == ']') return seq.result.asJava
+      if (value.charAt(idx) != ',') throw new InvalidTypeException( s"""Cannot parse list value from "$value", at character $idx expecting ',' but got '${value.charAt(idx)}'""")
+      idx = ParseUtils.skipSpaces(value, idx + 1)
+    }
+    throw new InvalidTypeException( s"""Malformed list value "$value", missing closing ']'""")
+  }
+
+  override def accepts(value: AnyRef): Boolean = value match {
+    case seq: Wrappers.SeqWrapper[_] => if (seq.isEmpty) true else ChoiceCodec.acceptsValue(seq.get(0))
+    case _ => false
+  }
+  override def accepts(value: DataType): Boolean = value match {
+    case _ => true
+  }
+}*/

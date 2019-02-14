@@ -1,9 +1,9 @@
 @import controllers.Tournaments
 @import com.amarkhel.tournament.api.Tournament
 @import com.amarkhel.user.api.User
-@(tournaments: Tournaments, loggedUser:Option[User])(implicit request:RequestHeader, messages: Messages)
+@(tournaments: Tournaments, loggedUser:Option[User], activeTab:String)(implicit request:RequestHeader, messages: Messages)
 
-@views.html.layout.logged(title = "Список турниров")(loggedUser) {
+@views.html.layout.logged(title = "Список турниров")(loggedUser, "tournamentsList") {
     @tags.alertFromRequest(request, "error")
 <div class="panel panel-default">
     <div class="panel-heading">
@@ -19,19 +19,31 @@
             </li>
         </ul>
         <div class="tab-content">
-            <div class="tab-pane fade in active" id="created">
+            @if(activeTab == "created"){
+                <div class="tab-pane fade in active" id="created">
+            } else {
+                <div class="tab-pane fade" id="created">
+            }
                 @tournaments.created.map { tour =>
-                   @created(tour)
+                   @created(tour)(loggedUser, messages)
                 }
             </div>
-            <div class="tab-pane fade" id="current">
+                @if(activeTab == "current"){
+                    <div class="tab-pane fade in active" id="current">
+                } else {
+                    <div class="tab-pane fade" id="current">
+                }
                 @tournaments.started.map { tour =>
-                   @started(tour)
+                   @started(tour)(loggedUser, messages)
                 }
             </div>
-            <div class="tab-pane fade" id="finished">
+            @if(activeTab == "finished"){
+                <div class="tab-pane fade in active" id="finished">
+            } else {
+                <div class="tab-pane fade" id="finished">
+            }
                 @tournaments.finished.map { tour =>
-                   @created(tour)
+                   @finished(tour)
                 }
 
             </div>

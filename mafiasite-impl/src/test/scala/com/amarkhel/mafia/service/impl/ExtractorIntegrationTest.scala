@@ -1,7 +1,7 @@
 package com.amarkhel.mafia.service.impl
 
 import akka.stream.scaladsl.Sink
-import com.amarkhel.mafia.common.Game
+import com.amarkhel.mafia.common.{Day, Game}
 import com.amarkhel.mafia.service.api.MafiaService
 import com.lightbend.lagom.scaladsl.api.AdditionalConfiguration
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LocalServiceLocator}
@@ -16,7 +16,7 @@ class ExtractorIntegrationTest extends AsyncWordSpec with Matchers with BeforeAn
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
     new LagomApplication(ctx) with MafiaComponentsAll with LocalServiceLocator with AhcWSComponents with TestTopicComponents
   }
-
+  private val day = Day(2014, 2, 2)
   val service = server.serviceClient.implement[MafiaService]
   import server.materializer
 
@@ -49,7 +49,7 @@ class ExtractorIntegrationTest extends AsyncWordSpec with Matchers with BeforeAn
         events <- service.events.subscribe.atMostOnceSource.take(1)
           .runWith(Sink.seq)
       } yield {
-        status shouldBe (ExtractorEntity.firstDay)
+        status shouldBe (day)
         events.size shouldBe 1
         events.head shouldBe an[Game]
         events.head.day.year shouldBe (2011)

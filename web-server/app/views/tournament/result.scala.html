@@ -1,0 +1,10 @@
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.tournament.api.GameDescription
+@import com.amarkhel.tournament.api.Util
+@import controllers.routes
+@(tour:Tournament, game: GameDescription)(implicit messages: Messages)
+<div class="panel-body">
+    <div class="panel">
+        @views.html.tournament.gameResult(tour, game)
+    </div>
+</div>

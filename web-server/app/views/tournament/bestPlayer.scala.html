@@ -1,0 +1,38 @@
+@import controllers.Tournaments
+@import controllers.PlayerStat
+@import com.amarkhel.tournament.api.Tournament
+@import com.amarkhel.tournament.api.SolutionResult
+@import com.amarkhel.user.api.User
+@import com.amarkhel.tournament.api.Util
+@(list: Seq[(PlayerStat, Int)], loggedUser:Option[User])(implicit request:RequestHeader, messages: Messages)
+
+@views.html.layout.logged(title = "Лучшие угадыватели")(loggedUser, "bestPlayer") {
+@tags.alertFromRequest(request, "error")
+
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Место</th>
+            <th>Пользователь</th>
+            <th>Количество игр</th>
+            <th>В среднем за игру очков</th>
+            <th>Угаданных мафов</th>
+            <th>Процент угаданных мафов</th>
+        </tr>
+        </thead>
+        <tbody>
+        @list.map { game =>
+        <tr class="success">
+            <td><b>@(game._2 + 1)</b></td>
+            <td>@game._1.name</td>
+            <td>@game._1.count</td>
+            <td>@Util.trimD(game._1.average)</td>
+            <td>@game._1.correct / @game._1.total</td>
+            <td>@Util.trimD(game._1.percent)</td>
+        </tr>
+        }
+        </tbody>
+    </table>
+</div>
+}

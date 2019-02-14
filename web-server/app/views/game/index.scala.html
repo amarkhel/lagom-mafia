@@ -4,7 +4,7 @@
 @import com.amarkhel.user.api.User
 @(gameForm: Form[LoadGameForm], user: User)(implicit request: RequestHeader, messages: Messages)
 
-@views.html.layout.logged("Посмотреть игру")(Some(user)) {
+@views.html.layout.logged("Посмотреть игру")(Some(user), "game") {
     @tags.alertFromRequest(request, "error")
     @gameForm.globalError.map { error => @tags.alert(error.message, "error")}
     @b3.formCSRF(routes.GameController.game) {

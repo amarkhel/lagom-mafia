@@ -20,7 +20,7 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
   }
 
   val service = server.serviceClient.implement[TournamentService]
-  private val emptyTournament = Tournament("empty", 3, "", List(UserState("apa", List.empty)), List(GameDescription(1, Location.KRESTY.name, 9, 2, List("a", "b"), 1, None, None)), LocalDateTime.now, None, None, 1)
+  private val emptyTournament = Tournament("empty", 3, "apa", List.empty, List(GameDescription(1, Location.KRESTY.name, 9, 2, List("a", "b"), 1, None, None)), LocalDateTime.now, None, None, 1)
   private val unrealTournament = Tournament("Unreal tournament", 3, "apaapaapa", List.empty, List(GameDescription(1, Location.KRESTY.name, 9, 12, List("bax", "loh"), 1, None, None), GameDescription(2, Location.KRESTY.name, 7, 8, List("Inn-ah", "lost"), 1, None, None)), LocalDateTime.now, None, None, 1)
   override def afterAll = server.stop()
 
@@ -60,17 +60,6 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
         res shouldBe (None)
       }
     }
-    "should handle start tournament" in {
-      for {
-        result <- service.createTournament.invoke(emptyTournament)
-        res <- service.startTournament(emptyTournament.name).invoke()
-        res2 <- service.getTournament(emptyTournament.name).invoke()
-      } yield {
-        result shouldBe (emptyTournament)
-        res shouldBe (true)
-        res2.get shouldBe (emptyTournament.copy(start = res2.get.start))
-      }
-    }
     "should handle join tournament" in {
       for {
         result <- service.createTournament.invoke(emptyTournament.copy(name = "test"))
@@ -83,17 +72,18 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
         res2.get.havePlayer("andrey") should be (true)
       }
     }
-    "should handle finish tournament" in {
+    "should handle start tournament" in {
       for {
-        result <- service.createTournament.invoke(emptyTournament.copy(name = "finish"))
-        res <- service.startTournament("finish").invoke()
-        res3 <- service.finishTournament("finish").invoke()
-        res2 <- service.getTournament("finish").invoke()
+        result <- service.createTournament.invoke(emptyTournament)
+        res <- service.joinTournament(emptyTournament.name, "puf").invoke()
+        res <- service.joinTournament(emptyTournament.name, "never").invoke()
+        res <- service.joinTournament(emptyTournament.name, "unstop").invoke()
+        res <- service.startTournament(emptyTournament.name).invoke()
+        res2 <- service.getTournament(emptyTournament.name).invoke()
       } yield {
-        result shouldBe (emptyTournament.copy(name = "finish"))
+        result shouldBe (emptyTournament)
         res shouldBe (true)
-        res3 shouldBe (true)
-        res2.get shouldBe (emptyTournament.copy(name = "finish", start = res2.get.start, finish = res2.get.finish))
+        res2.get.copy(players = List.empty) shouldBe (emptyTournament.copy(start = res2.get.start))
       }
     }
     "should handle get tournaments" in {
@@ -138,6 +128,8 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
         getAfterJoin2 <- service.getTournament(unrealTournament.name).invoke()
         join3 <- service.joinTournament(unrealTournament.name, "unstop").invoke()
         getAfterJoin3 <- service.getTournament(unrealTournament.name).invoke()
+        startTournament <- service.startTournament(unrealTournament.name).invoke()
+        getAfterStartTournament <- service.getTournament(unrealTournament.name).invoke()
         startGame <- service.startGame(unrealTournament.name, 1).invoke()
         getAfterStartGame <- service.getTournament(unrealTournament.name).invoke()
         pufg1h1 <- service.nextRound(unrealTournament.name, "puf").invoke()
@@ -199,7 +191,13 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
         getAfterJoin3.get.havePlayer("never") should be (true)
         getAfterJoin3.get.havePlayer("unstop") should be (true)
         getAfterJoin3.get.countJoinedPlayers should be (3)
-        getAfterJoin3.get.started should be (true)
+        getAfterJoin3.get.started should be (false)
+        getAfterStartTournament.get.allPlayersJoined should be (true)
+        getAfterStartTournament.get.havePlayer("puf") should be (true)
+        getAfterStartTournament.get.havePlayer("never") should be (true)
+        getAfterStartTournament.get.havePlayer("unstop") should be (true)
+        getAfterStartTournament.get.countJoinedPlayers should be (3)
+        getAfterStartTournament.get.started should be (true)
         join1 should be (true)
         join2 should be (true)
         join3 should be (true)
@@ -212,15 +210,15 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
         getAfternextRound.get.findPlayer("puf").get.getById(1).get should be (Solution(1, Map.empty, 1, false))
         getAfterNextRound2.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map.empty, 2, false))
         pufg1ch1 should be (true)
-        getAfterChooseMafia.get.findPlayer("puf").get.getById(1).get should be (Solution(1, Map("Eternity" -> 1), 1, false))
-        getAfterChoose2.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> 2), 2, false))
-        getAfterChoose3.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> 2, "Eternity" -> 2), 2, true))
-        getAfterGameCompleted.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> 2, "Eternity" -> 2), 2, true))
-        getAfterGameCompleted.get.findPlayer("puf").get.getById(1).get should be (Solution(1, Map("Gorod" -> 1, "Eternity" -> 1), 1, true))
-        getAfterGameCompleted.get.findPlayer("unstop").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> 3, "Eternity" -> 2), 3, true))
+        getAfterChooseMafia.get.findPlayer("puf").get.getById(1).get should be (Solution(1, Map("Eternity" -> (1,0)), 1, false))
+        getAfterChoose2.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> (2, 0)), 2, false))
+        getAfterChoose3.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> (2, 0), "Eternity" -> (2, 0)), 2, true))
+        getAfterGameCompleted.get.findPlayer("never").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> (2, 0), "Eternity" -> (2, 0)), 2, true))
+        getAfterGameCompleted.get.findPlayer("puf").get.getById(1).get should be (Solution(1, Map("Gorod" -> (1, 0), "Eternity" -> (1, 0)), 1, true))
+        getAfterGameCompleted.get.findPlayer("unstop").get.getById(1).get should be (Solution(1, Map("Inn-ah" -> (3, 0), "Eternity" -> (2, 0)), 3, true))
         getAfterGameCompleted.get.hasGameInProgress should be (false)
         getAfterGameCompleted.get.games.filter(_.id == 1).head.finished.isDefined should be (true)
-        getUserStatePuf.get.solutions should be (List(Solution(1, Map("Gorod" -> 1, "Eternity" -> 1), 1, true)))
+        getUserStatePuf.get.solutions should be (List(Solution(1, Map("Gorod" -> (1, 0), "Eternity" -> (1, 0)), 1, true)))
         getAfterGameCompleted.get.stat(0) should be (("puf",1,0.0,0.0,0.0,0.0,List(),0,List(0.0)))
         getAfterGameCompleted.get.stat(1) should be (("never",1,0.0,0.0,0.0,0.0,List(),0,List(0.0)))
         getAfterGameCompleted.get.stat(2) should be (("unstop",1,0.0,0.0,0.0,0.0,List(),0,List(0.0)))
@@ -234,11 +232,11 @@ class TournamentIntegrationTest extends AsyncWordSpec with Matchers with BeforeA
         getAfterSecondGameComplete.get.hasGameInProgress should be (false)
         getAfterSecondGameComplete.get.inProgress should be (false)
         getAfterSecondGameComplete.get.findPlayer("puf").get.getById(2).get should be (Solution(2,Map(),8,true))
-        getAfterSecondGameComplete.get.findPlayer("never").get.getById(2).get should be (Solution(2,Map("Inn-ah" -> 2, "Eternity" -> 3),3,true))
-        getAfterSecondGameComplete.get.findPlayer("unstop").get.getById(2).get should be (Solution(2, Map("Inn-ah" -> 3, "lost" -> 3), 3, true))
+        getAfterSecondGameComplete.get.findPlayer("never").get.getById(2).get should be (Solution(2,Map("Inn-ah" -> (2, 0), "Eternity" -> (3, 0)),3,true))
+        getAfterSecondGameComplete.get.findPlayer("unstop").get.getById(2).get should be (Solution(2, Map("Inn-ah" -> (3, 0), "lost" -> (3, 0)), 3, true))
         getAfterSecondGameComplete.get.stat(0) should be (("puf",2,0.0,0.0,0.0,0.0,List(),0,List(0.0, 0.0)))
-        getAfterSecondGameComplete.get.stat(1) should be (("never",2,37.50,37.50,0.0,18.75,List(("Inn-ah",2)),2,List(0.0, 37.50)))
-        getAfterSecondGameComplete.get.stat(2) should be (("unstop",2,62.50,62.50,0.0,31.25,List(("Inn-ah",3), ("lost",3)),3,List(0.0, 62.50)))
+        getAfterSecondGameComplete.get.stat(1) should be (("never",2,37.50,37.50,0.0,18.75,List(("Inn-ah",(2, 0))),2,List(0.0, 37.50)))
+        getAfterSecondGameComplete.get.stat(2) should be (("unstop",2,62.50,62.50,0.0,31.25,List(("Inn-ah",(3, 0)), ("lost",(3, 0))),3,List(0.0, 62.50)))
       }
     }
   }

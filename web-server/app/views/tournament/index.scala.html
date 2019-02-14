@@ -4,7 +4,7 @@
 @import com.amarkhel.user.api.User
 @(form: Form[TournamentForm], user: User)(implicit request: RequestHeader, messages: Messages)
 
-@views.html.layout.logged("Создать турнир")(Some(user)) {
+@views.html.layout.logged("Создать турнир")(Some(user), "tournamentCreate") {
     @tags.alertFromRequest(request, "error")
     @form.errors.map { error => @tags.alert(error.message, "error")}
     @form.globalError.map { error => @tags.alert(error.message, "error")}

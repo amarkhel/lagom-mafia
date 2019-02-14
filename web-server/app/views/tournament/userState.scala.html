@@ -1,0 +1,40 @@
+@import com.amarkhel.tournament.api.Solution
+@import com.amarkhel.tournament.api.GameDescription
+@import com.amarkhel.user.api.User
+@import controllers.routes
+@(player: (String, Solution), game:GameDescription)(implicit messages: Messages,loggedUser: Option[User])
+
+<div class="panel-group" id="accordion">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne@player._1" aria-expanded="false" class="collapsed">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <center>
+                                <span><b style="color:green">@player._1</b></span>
+                            </center>
+                        </li>
+                    </ul>
+                </a>
+            </h4>
+        </div>
+        <div id="collapseOne@player._1" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+            <div class="panel-body">
+                <div class="panel">
+                    <p>Определился с выбором <b>@player._2.mafia.size</b> мафиоз из <b>@game.mafias.size</b></p>
+                    @views.html.layout.isAdmin{
+                    <p><b>Видно только админам.</b>
+                        @if(player._2.mafia.size == 0) {
+                          Никого не выбрал
+                        } else {
+                          Он выбрал <b>@player._2.mafia.map(e => s"${e._1} на ${e._2._1} ходу")</b>
+                        }
+                    </p>
+                    }
+                    <p>В данный момент размышляет над <b>@(player._2.currentRound+1)</b> ходом</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

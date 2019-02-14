@@ -14,10 +14,10 @@ class ExtractorEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll 
 
   private val system = ActorSystem("ExtractorEntitySpec", JsonSerializerRegistry.actorSystemSetupFor(SerializerRegistry))
 
-  private val game = Game(1, List(GameStarted(1, Location.OZHA, LocalDateTime.of(2014, 2, 2, 12, 22, 23).toString,
+  private val game = Game(1, List(GameStarted(Location.OZHA, LocalDateTime.of(2014, 2, 2, 12, 22, 23).toString,
     List("Andrey", "Vika"), 0), GameCompleted("Вся мафия убита", 362)), OK, List(Gamer("Andrey", Role.CITIZEN),Gamer("Vika", Role.MAFIA)), 3)
 
-  private val game2 = Game(2, List(GameStarted(1, Location.OZHA, LocalDateTime.of(2012, 1, 1, 12, 22, 23).toString,
+  private val game2 = Game(2, List(GameStarted(Location.OZHA, LocalDateTime.of(2012, 1, 1, 12, 22, 23).toString,
     List("Andrey", "Vika"), 0), GameCompleted("Вся мафия убита", 362)), OK, List(Gamer("Andrey", Role.CITIZEN),Gamer("Vika", Role.MAFIA)), 3)
 
   private val day = Day(2014, 2, 2)
@@ -44,17 +44,17 @@ class ExtractorEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll 
     "should return initial state" in withTestDriver { driver =>
       val outcome = driver.run(GetStatusCommand)
       outcome.events.size should be(0)
-      outcome.state.lastDay should ===(ExtractorEntity.firstDay)
+      outcome.state.lastDay should ===(day)
       outcome.sideEffects.size should be(1)
-      outcome.sideEffects.head should be(Reply(ExtractorEntity.firstDay))
+      outcome.sideEffects.head should be(Reply(day))
     }
     "should not change state after game complete" in withTestDriver { driver =>
       driver.run(FinishGame(game))
       val outcome2 = driver.run(GetStatusCommand)
       outcome2.events.size should be (0)
-      outcome2.state.lastDay should === (ExtractorEntity.firstDay)
+      outcome2.state.lastDay should === (day)
       outcome2.sideEffects.size should be (1)
-      outcome2.sideEffects.head should be (Reply(ExtractorEntity.firstDay))
+      outcome2.sideEffects.head should be (Reply(day))
     }
     "should return last modified state" in withTestDriver { driver =>
       driver.run(CompleteDay(day))
@@ -69,7 +69,7 @@ class ExtractorEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll 
       val outcome = driver.run(ClearCommand)
       outcome.events.size should be(1)
       outcome.events should contain only ClearEvent
-      outcome.state.lastDay should ===(ExtractorEntity.firstDay)
+      outcome.state.lastDay should ===(day)
       outcome.sideEffects.size should be(1)
       outcome.sideEffects.head should be(Reply(akka.Done))
     }
@@ -78,18 +78,18 @@ class ExtractorEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll 
       val outcome = driver.run(ClearCommand)
       outcome.events.size should be(1)
       outcome.events should contain only ClearEvent
-      outcome.state.lastDay should ===(ExtractorEntity.firstDay)
+      outcome.state.lastDay should ===(day)
       outcome.sideEffects.size should be(1)
       outcome.sideEffects.head should be(Reply(akka.Done))
     }
     "should not changes after error" in withTestDriver { driver =>
       val outcome = driver.run(GetStatusCommand)
-      outcome.state.lastDay should ===(ExtractorEntity.firstDay)
+      outcome.state.lastDay should ===(day)
       val outcome2 = driver.run(LoadError("Error"))
       outcome2.events.size should be(1)
       outcome2.events should contain only Error("Error")
       outcome2.events.head should === (Error("Error"))
-      outcome2.state.lastDay should ===(ExtractorEntity.firstDay)
+      outcome2.state.lastDay should ===(day)
       outcome2.sideEffects.size should be(1)
       outcome2.sideEffects.head should be(Reply(akka.Done))
     }

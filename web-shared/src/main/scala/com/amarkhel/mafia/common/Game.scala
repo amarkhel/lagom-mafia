@@ -13,16 +13,14 @@ import scala.collection.mutable
 sealed trait GameEvent{def time:Int}
 object GameEvent {
   import prickle._
-  /*implicit object LocalDateTimePickler extends Pickler[LocalDateTime] {
-    def pickle[P](x: LocalDateTime, state: PickleState)(implicit config: PConfig[P]): P =
-      config.makeString(x.toString)
-  }
-
-  implicit object LocalDateTimeUnpickler extends Unpickler[LocalDateTime] {
-    def unpickle[P](pickle: P, state: mutable.Map[String, Any])(implicit config: PConfig[P]) = {
-      config.readString(pickle).map(LocalDateTime.parse)
+  def cutSmiles(mess:GameEvent) = mess match {
+    case MessageSent(text, time) => {
+      val pattern = """<img src="https://st.mafiaonline.ru/images/smiles/(.+?).gif"[\s\S]*">""".r
+      val converted = pattern.replaceAllIn(text, m => s"XXXXXX${m.group(1)}XXXXXX")
+      MessageSent(converted, time)
     }
-  }*/
+    case other:GameEvent => other
+  }
 
   implicit val pickler: PicklerPair[GameEvent] = CompositePickler[GameEvent].concreteType[GameResultRendered].
     concreteType[GameStarted].concreteType[GameCompleted].concreteType[Voted].concreteType[Prisoned].concreteType[Killed]
@@ -30,7 +28,7 @@ object GameEvent {
     .concreteType[MessageSent].concreteType[PrivateMessageSent].concreteType[MafiaNotKilled].concreteType[GameStopped]
     .concreteType[EarnedMaf].concreteType[SumrakVoted]
 }
-case class GameStarted(id:Int, loc:Location, start:String, players:List[String], time:Int) extends GameEvent{
+case class GameStarted(loc:Location, start:String, players:List[String], time:Int) extends GameEvent{
   def date = LocalDateTime.parse(start)
 }
 case class GameCompleted(message:String, time:Int) extends GameEvent
